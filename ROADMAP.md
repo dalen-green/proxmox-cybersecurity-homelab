@@ -297,7 +297,7 @@ A milestone is marked **Published** only after its project folder contains:
 - [ ] Run vulnerable application containers only inside a disposable VM on `vmbr1`.
 - [ ] Add infrastructure diagrams created from version-controlled source.
 - [ ] Add Markdown linting and secret scanning to the repository workflow.
-- [ ] Publish a simple portfolio landing page after the core project write-ups are complete.
+- [x] Use the root README as a concise portfolio landing page that directs readers to detailed project evidence and design documentation.
 
 ## Safety and Ethics
 
