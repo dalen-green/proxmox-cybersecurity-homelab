@@ -530,7 +530,7 @@ This model avoids making multiple untracked changes at once and makes the final 
 
 ## 6. Open Improvements Derived From These Lessons
 
-- [ ] Rename the repository directory from `docs.` to `docs` and verify all links.
+- [x] Rename the repository directory from `docs.` to `docs` and verify all links.
 - [ ] Implement or confirm a comprehensive IPv4 block from the lab network to protected home and management networks.
 - [ ] Verify that Proxmox and OPNsense management services cannot be reached from an unauthorized lab endpoint.
 - [ ] Validate IPv6 isolation or implement a documented disabled state.
