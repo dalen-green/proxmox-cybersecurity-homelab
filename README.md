@@ -4,6 +4,8 @@ An evidence-driven cybersecurity lab built on a dedicated Dell OptiPlex 7090 SFF
 
 This portfolio emphasizes architecture, security reasoning, repeatable validation, troubleshooting, and clearly stated limitations. Verified, in-progress, and planned work are labeled separately so each technical claim reflects the evidence currently available.
 
+AI tools were used to assist with documentation organization and editing. All configurations, testing, evidence collection, and technical conclusions were performed or independently verified by the repository owner.
+
 ## Start Here
 
 | Resource | What it demonstrates |
