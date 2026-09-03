@@ -1,7 +1,7 @@
 # Security Boundaries
 
 > **Document status:** Living document  
-> **Last updated:** 2026-09-02  
+> **Last updated:** 2026-09-03  
 > **Lab phase:** Proxmox foundation, IPv4 network segmentation, and Ubuntu Server baseline  
 > **Publication status:** Sanitized for a public portfolio
 
@@ -21,22 +21,27 @@ The lab currently runs on a dedicated Dell OptiPlex 7090 SFF with Proxmox VE. Tw
 |---|---|---|
 | `vmbr0` | Upstream bridge connected to the physical Ethernet interface | **Operational** |
 | `vmbr1` | Isolated virtual bridge with no physical uplink | **Operational** |
-| OPNsense WAN | Connects OPNsense to `vmbr0` and the upstream private network | **Operational** |
-| OPNsense LAN | Connects OPNsense to `vmbr1` | **Operational** |
+| OPNsense WAN (`net1` / `vtnet1`) | Connects OPNsense to `vmbr0` and the upstream private network | **Operational** |
+| OPNsense LAN (`net0` / `vtnet0`) | Connects OPNsense to `vmbr1` | **Operational** |
 | OPNsense | Provides IPv4 routing, DHCP, DNS forwarding, NAT, firewall policy, and logging | **Operational** |
-| Ubuntu Server | First administrative endpoint on `vmbr1` | **Baseline in progress** |
+| Ubuntu Server | First laboratory endpoint on `vmbr1` | **Baseline in progress** |
 
 The public repository intentionally omits exact upstream IP addresses, MAC addresses, serial numbers, credentials, and configuration exports.
 
 ```mermaid
 flowchart TD
-    A["Trusted administrative workstation"] --> B["Upstream private network / vmbr0"]
-    B --> C["Proxmox management plane"]
-    B --> D["OPNsense WAN"]
-    D --> E["OPNsense firewall boundary"]
-    E --> F["OPNsense LAN / vmbr1"]
-    F --> G["Ubuntu and future lab systems"]
+    A["Trusted administrative workstation"] --- U["Upstream private network"]
+    U --- B0["vmbr0 — upstream bridge"]
+    B0 --- P["Proxmox management plane"]
+    B0 --- W["OPNsense net1 / vtnet1 — WAN"]
+    W --- F["OPNsense firewall, routing, and NAT"]
+    F --- L["OPNsense net0 / vtnet0 — LAN (10.10.10.1/24)"]
+    L --- B1["vmbr1 — internal only; no host IP or physical uplink"]
+    B1 --- S["Ubuntu Server"]
+    P -. "VM console management" .-> F
 ```
+
+Solid lines show the current physical and virtual network path. The dotted line shows OPNsense console administration through Proxmox; it is a control path, not a bridged network connection. The OPNsense web GUI is not exposed on WAN.
 
 OPNsense is the only intended Layer 3 path between `vmbr1` and the upstream network. A laboratory VM must not be given an additional adapter on `vmbr0`, because that would bypass this firewall path.
 
@@ -81,7 +86,7 @@ The following definitions are used throughout this document:
 |---|---|---|---|
 | `SB-01` | `vmbr1` has no physical uplink | **Verified** | Confirmed in the Proxmox bridge configuration |
 | `SB-02` | The Ubuntu lab endpoint connects to `vmbr1` rather than `vmbr0` | **Verified** | Confirmed through VM hardware and guest addressing |
-| `SB-03` | OPNsense WAN connects to `vmbr0` and LAN connects to `vmbr1` | **Verified** | Confirmed through Proxmox adapter assignments and interface operation |
+| `SB-03` | OPNsense `net1` / `vtnet1` WAN connects to `vmbr0`, and `net0` / `vtnet0` LAN connects to `vmbr1` | **Verified** | Confirmed through Proxmox adapter assignments and interface operation |
 | `SB-04` | OPNsense provides IPv4 DHCP, DNS forwarding, NAT, and permitted outbound access | **Verified** | Ubuntu received a lab address and reached approved internet services |
 | `SB-05` | A specific IPv4 SSH restriction is evaluated before the general LAN allow rule | **Verified** | The controlled SSH attempt was denied and recorded in the OPNsense firewall log |
 | `SB-06` | All IPv4 traffic from the lab subnet to protected home and management networks is denied by default | **Required** | Create or confirm a comprehensive logged block rule and test multiple protocols and management ports |
@@ -99,7 +104,7 @@ The current evidence supports the claim that the IPv4 topology, OPNsense routing
 | Source | Destination | Service or traffic | Policy | Validation status |
 |---|---|---|---|---|
 | Trusted administrative workstation | Proxmox management plane | Required management services | **Allow** from the trusted management path | Operational; source restriction should be documented |
-| Trusted administrative workstation | OPNsense management interface | HTTPS administration | **Allow** only as required | Operational; least-privilege restriction should be documented |
+| Trusted administrative workstation | OPNsense control plane | Proxmox VM console; explicitly authorized LAN-side HTTPS only when needed | **Allow** only as required | Proxmox console operational; WAN web GUI not exposed |
 | Lab endpoint | OPNsense LAN interface | DHCP, DNS, and required gateway services | **Allow** | **Verified for IPv4** |
 | Lab endpoint | Approved internet services | DNS and required update or repository traffic | **Allow through OPNsense** | **Verified for IPv4** |
 | Lab endpoint | Designated upstream SSH test destination | TCP destination port 22 | **Deny and log** | **Verified** |
@@ -130,7 +135,9 @@ The following principles govern OPNsense rule creation:
 
 ## 8. Administrative Access Policy
 
-- Proxmox and OPNsense administration is performed from a trusted workstation on the upstream private network.
+- Proxmox administration is performed from a trusted workstation on the upstream private network.
+- OPNsense console administration is reached through the Proxmox management plane; the OPNsense web GUI is not exposed on WAN.
+- Initial GUI bootstrap used a temporary LAN-side Proxmox path and SSH tunnel that were removed after setup.
 - Management interfaces must not be exposed through home-router port forwarding.
 - Remote management from the public internet is not permitted.
 - Future remote access, if needed, will use a deliberately configured VPN rather than direct management-port exposure.
@@ -240,4 +247,5 @@ The following statement accurately represents the current level of validation:
 
 | Date | Change |
 |---|---|
+| 2026-09-03 | Corrected the adapter-level WAN/LAN mapping in the topology and distinguished Proxmox console management from network traffic through OPNsense. |
 | 2026-09-02 | Created the initial security-boundary document from the verified Proxmox, OPNsense, and Ubuntu lab state. |

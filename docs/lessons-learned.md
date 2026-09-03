@@ -1,7 +1,7 @@
 # Lessons Learned
 
 > **Document status:** Living document  
-> **Last updated:** 2026-09-02  
+> **Last updated:** 2026-09-03  
 > **Lab phase:** Proxmox foundation, IPv4 network segmentation, and Ubuntu Server baseline  
 > **Publication status:** Sanitized for a public portfolio
 
@@ -102,8 +102,8 @@ Proxmox identifies the adapters as `net0` and `net1`, while OPNsense uses guest 
 
 #### Resolution and validation
 
-- Verified `net0 → vmbr0 → OPNsense WAN`.
-- Verified `net1 → vmbr1 → OPNsense LAN`.
+- Verified `net1 → vmbr0 → OPNsense vtnet1 → WAN`.
+- Verified `net0 → vmbr1 → OPNsense vtnet0 → LAN`.
 - Confirmed that the WAN received an upstream private address.
 - Confirmed that the LAN supplied the isolated lab subnet and related services.
 
@@ -120,7 +120,7 @@ Interface mapping should be validated from both the hypervisor and guest perspec
 
 #### Situation
 
-The OPNsense WAN address changed, and the previously used management address stopped responding from the administrative workstation.
+OPNsense displayed a different WAN address after a DHCP event, so the earlier address no longer described the firewall's current upstream attachment.
 
 #### Cause
 
@@ -128,11 +128,11 @@ The home router supplied the OPNsense WAN address through DHCP. A dynamically as
 
 #### Resolution and validation
 
-The current WAN address was confirmed from the OPNsense console and then used for the appropriate management and connectivity checks.
+The current WAN lease was confirmed from the OPNsense console and then used for routing and connectivity checks. Administration remained available through the Proxmox VM console or a deliberately authorized LAN-side path; the WAN web GUI was not exposed.
 
 #### Lesson
 
-A dynamic address should be treated as temporary. Documentation should identify the interface by role rather than relying on one lease value. A DHCP reservation may later provide a predictable management address without manually configuring a conflicting static address.
+A dynamic address should be treated as temporary. Documentation should identify the interface by role rather than relying on one lease value. A DHCP reservation may later provide a predictable upstream address without manually configuring a conflicting static address; it is not a reason to expose administration on WAN.
 
 ---
 
@@ -570,4 +570,5 @@ Each new entry should include the situation, cause or analysis, resolution when 
 
 | Date | Change |
 |---|---|
+| 2026-09-03 | Corrected the recorded OPNsense adapter mapping and separated the dynamic WAN lease from the protected management path. |
 | 2026-09-02 | Created the initial lessons-learned record from the Proxmox, OPNsense, Ubuntu, firewall-validation, and repository-documentation phases. |
