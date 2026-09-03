@@ -1,9 +1,9 @@
 # Project 01: Proxmox Foundation
 
 > **Project status:** Verified  
-> **Last updated:** 2026-09-02  
+> **Last updated:** 2026-09-03  
 > **Platform:** Dell OptiPlex 7090 SFF running Proxmox VE  
-> **Portfolio status:** Evidence collection in progress
+> **Portfolio status:** Published
 
 ## 1. Objective
 
@@ -172,40 +172,25 @@ Detailed trust zones and required security controls are documented in [`security
 | `PVE-VAL-05` | Review Proxmox storage | `local` and `local-lvm` are available for their intended roles | **Pass** |
 | `PVE-VAL-06` | Review `vmbr0` | Bridge is active and connected to the physical interface | **Pass** |
 | `PVE-VAL-07` | Review `vmbr1` | Bridge is active with no physical uplink | **Pass** |
-| `PVE-VAL-08` | Attach an isolated guest through the later OPNsense design | Guest uses `vmbr1` rather than connecting directly to `vmbr0` | **Pass** |
+
+Later OPNsense and Ubuntu work provided cross-project confirmation that isolated guests can use `vmbr1`. That integration evidence belongs to `LAB-02` and `LAB-03`; it is not required to validate the Proxmox foundation itself.
 
 ## 8. Evidence
 
-Evidence should be selected for what it proves rather than included as a complete installation diary.
+The evidence index, validation traceability, captions, and sanitization record are maintained in [`evidence/README.md`](evidence/README.md).
 
-Recommended evidence [TBD]:
+The [published evidence pack](evidence/) contains six selected artifacts that support the validation results:
 
-| Evidence file | What it should prove |
-|---|---|
-| `evidence/01-proxmox-summary.png` | Host, node, and Proxmox platform are operational |
-| `evidence/02-repositories.png` | Correct repository configuration |
-| `evidence/03-storage-overview.png` | Availability and roles of `local` and `local-lvm` |
-| `evidence/04-network-bridges.png` | `vmbr0` and internal-only `vmbr1` configuration |
-| `evidence/05-vmbr1-active.png` | `vmbr1` is active without a physical port |
+| Evidence ID | Required artifact | Status |
+|---|---|---|
+| `PVE-E01` | Sanitized node Summary screenshot | **Published** |
+| `PVE-E02` | Sanitized repository configuration screenshot | **Published** |
+| `PVE-E03A` | Sanitized `local` storage overview screenshot | **Published** |
+| `PVE-E03B` | Sanitized `local-lvm` storage overview screenshot | **Published** |
+| `PVE-E04` | Sanitized `vmbr0` and `vmbr1` configuration screenshot | **Published** |
+| `PVE-E05` | Complete `pveversion -v` text output | **Published** |
 
-Each screenshot should:
-
-- Have a short caption
-- Identify the relevant configuration
-- Explain what the image proves
-- Remove or obscure unnecessary IP addresses, MAC addresses, serial numbers, and personal information
-
-Useful sanitized command output may include:
-
-```bash
-pveversion -v
-pvesm status
-ip -brief address
-ip -brief link
-bridge link
-```
-
-Do not publish complete configuration files until every value has been reviewed for sensitive information.
+Together, these artifacts document the operational node, repository configuration, storage roles, virtual bridges, and installed platform versions without exposing the removed network and hardware identifiers.
 
 ## 9. Problems Encountered
 
@@ -288,4 +273,5 @@ This foundation supports the next two projects:
 
 | Date | Change |
 |---|---|
+| 2026-09-03 | Published the sanitized evidence pack with validation mapping and concise captions. |
 | 2026-09-02 | Created the initial Proxmox Foundation project documentation. |

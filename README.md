@@ -20,7 +20,7 @@ AI tools were used to assist with documentation organization and editing. All co
 
 | Workstream | Status | Current result |
 |---|---|---|
-| `LAB-01` Proxmox foundation | **Verified** / evidence pack in progress | Proxmox is operational; repositories, updates, storage roles, `vmbr0`, and internal-only `vmbr1` have been reviewed and validated. |
+| `LAB-01` Proxmox foundation | **Verified** / **Published** | Proxmox is operational; repositories, updates, storage roles, `vmbr0`, and internal-only `vmbr1` are validated in the [sanitized evidence pack](projects/01-proxmox-foundation/evidence/). |
 | `LAB-02` OPNsense segmentation | **Verified for IPv4** / write-up drafting | IPv4 DHCP, DNS, NAT, and outbound access work; a representative deny rule was validated through endpoint behavior and firewall logs. |
 | `LAB-03` Ubuntu Server baseline | **In progress** | Installation, account separation, updates, OpenSSH, and UFW enablement are complete; baseline audit and recovery validation remain. |
 | `LAB-04`–`LAB-08` | **Planned** | Windows, Active Directory, vulnerability testing, Wazuh monitoring, and independent recovery testing are defined but not claimed as implemented. |

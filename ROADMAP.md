@@ -1,6 +1,6 @@
 # Cybersecurity Home Lab Roadmap
 
-Last updated: 2026-09-02
+Last updated: 2026-09-03
 
 This roadmap describes the planned development of a segmented cybersecurity home lab built on Proxmox VE. The lab is intended to demonstrate practical experience in virtualization, network security, Linux and Windows administration, identity management, vulnerability assessment, security monitoring, and recovery testing.
 
@@ -27,7 +27,7 @@ Portfolio documentation is tracked separately from technical implementation:
 
 | ID | Milestone | Lab status | Portfolio status |
 |---|---|---|---|
-| `LAB-01` | Proxmox foundation | **Verified** | **Drafting** |
+| `LAB-01` | Proxmox foundation | **Verified** | **Published** |
 | `LAB-02` | OPNsense network segmentation | **Verified for IPv4** | **Drafting** |
 | `LAB-03` | Ubuntu Server security baseline | **In progress** | **Not started** |
 | `LAB-04` | Windows 11 endpoint | **Planned** | **Not started** |
@@ -58,6 +58,8 @@ Completion evidence:
 - Explanation of why the isolated bridge has no physical port
 
 Repository location: [`projects/01-proxmox-foundation/`](projects/01-proxmox-foundation/)
+
+Published evidence: [LAB-01 evidence pack](projects/01-proxmox-foundation/evidence/)
 
 ---
 
@@ -273,7 +275,7 @@ A milestone is marked **Published** only after its project folder contains:
 ### Now
 
 1. Finish `LAB-03`, including the Ubuntu baseline review and snapshot validation.
-2. Publish sanitized documentation for `LAB-01` through `LAB-03`.
+2. Publish sanitized documentation for `LAB-02` and `LAB-03`.
 3. Complete the remaining IPv6 isolation review for `LAB-02`.
 
 ### Next
