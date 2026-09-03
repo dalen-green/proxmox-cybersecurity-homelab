@@ -1,7 +1,7 @@
 # Lab Architecture
 
 > **Document status:** Living document  
-> **Last updated:** 2026-09-02  
+> **Last updated:** 2026-09-03  
 > **Lab phase:** Proxmox foundation, IPv4 network segmentation, and Ubuntu Server baseline  
 > **Publication status:** Sanitized for a public portfolio
 
@@ -39,15 +39,21 @@ The lab architecture follows six goals:
 
 ```mermaid
 flowchart TD
-    I["Internet"] --> R["Home router"]
-    R --> B0["vmbr0: upstream bridge"]
-    B0 --> P["Proxmox management"]
-    B0 --> W["OPNsense WAN"]
-    W --> F["OPNsense firewall and router"]
-    F --> B1["vmbr1: isolated lab bridge"]
-    B1 --> U["Ubuntu Server"]
-    B1 -. "planned" .-> X["Windows, Kali, Wazuh, and targets"]
+    I["Internet"] --- R["Home router"]
+    subgraph H["Dell OptiPlex 7090 / Proxmox VE"]
+        N["Physical Ethernet interface"] --- B0["vmbr0 — upstream bridge"]
+        B0 --- P["Proxmox management plane"]
+        B0 --- W["OPNsense net1 / vtnet1 — WAN"]
+        W --- F["OPNsense firewall, routing, and NAT"]
+        F --- L["OPNsense net0 / vtnet0 — LAN (10.10.10.1/24)"]
+        L --- B1["vmbr1 — internal only; no host IP or physical uplink"]
+        B1 --- U["Ubuntu Server — lab DHCP client"]
+        B1 -. "planned attachment" .-> X["Windows, Kali, Wazuh, and targets"]
+    end
+    R --- N
 ```
+
+Solid lines show the current physical and virtual network path. The dashed line marks systems that are planned rather than deployed. The explicit adapter labels reflect the verified mapping instead of assuming that Proxmox adapter order matches WAN/LAN order.
 
 The home router remains the household internet-edge router. OPNsense operates behind it and creates a second, lab-specific network boundary.
 
@@ -95,8 +101,8 @@ Proxmox snapshots will support short-term rollback during experiments. They are 
 |---|---|---|---|
 | Physical Ethernet interface | Upstream home router or private network | Physical path outside the Proxmox host | **Operational** |
 | `vmbr0` | Physical Ethernet interface | Upstream virtual switch for Proxmox management and OPNsense WAN | **Operational** |
-| OPNsense `net0` | `vmbr0` | WAN-facing virtual network adapter | **Operational** |
-| OPNsense `net1` | `vmbr1` | LAN-facing virtual network adapter | **Operational** |
+| OPNsense VM `net1` / guest `vtnet1` | `vmbr0` | WAN-facing virtual network adapter | **Operational** |
+| OPNsense VM `net0` / guest `vtnet0` | `vmbr1` | LAN-facing virtual network adapter | **Operational** |
 | `vmbr1` | No physical interface | Internal-only virtual switch for laboratory systems | **Operational** |
 | Ubuntu virtual NIC | `vmbr1` | First guest endpoint on the isolated network | **Operational** |
 
@@ -138,7 +144,7 @@ The WAN address is expected to change if it is assigned dynamically by the home 
 | Virtual disk | 32 GiB on `local-lvm` |
 | Firmware and machine | OVMF/UEFI with Q35 machine type |
 | Disk interface | VirtIO SCSI |
-| Network interfaces | Two VirtIO adapters: `vmbr0` WAN and `vmbr1` LAN |
+| Network interfaces | `net1` on `vmbr0` appears as `vtnet1` (WAN); `net0` on `vmbr1` appears as `vtnet0` (LAN) |
 | Current services | IPv4 routing, firewall policy, DHCP, DNS forwarding, NAT, and logging |
 | Status | **Operational for IPv4** |
 
@@ -179,12 +185,14 @@ Vulnerable application containers should run inside a disposable VM rather than 
 | Flow | Path | Current purpose |
 |---|---|---|
 | Proxmox administration | Trusted workstation → upstream network → `vmbr0` → Proxmox | Hypervisor and guest administration |
-| OPNsense administration | Trusted workstation → upstream private network → OPNsense management service | Firewall and network administration |
+| OPNsense console administration | Trusted workstation → upstream network → `vmbr0` → Proxmox management → OPNsense VM console | Firewall and network administration without exposing the web GUI on WAN |
 | Lab DHCP | Ubuntu → `vmbr1` → OPNsense LAN service | Supplies the guest's IPv4 configuration |
 | Lab DNS | Ubuntu → `vmbr1` → OPNsense → approved resolver path | Resolves approved domain names |
 | Lab internet access | Ubuntu → `vmbr1` → OPNsense → `vmbr0` → home router → internet | Updates and approved external resources |
 | Return traffic | Internet or upstream service → home router → OPNsense → `vmbr1` → Ubuntu | Returns traffic for an allowed, stateful connection |
 | Same-subnet lab traffic | Lab VM → `vmbr1` → lab VM | Direct east-west traffic that ordinarily bypasses OPNsense inspection |
+
+The OPNsense web GUI is not exposed on its WAN interface. Initial GUI bootstrap used a temporary LAN-side Proxmox path and an SSH tunnel; that temporary host path was removed after setup and is not part of the current data-plane topology.
 
 Firewall-policy details and the difference between verified restrictions and required future restrictions are documented in [security-boundaries.md](security-boundaries.md).
 
@@ -193,9 +201,10 @@ Firewall-policy details and the difference between verified restrictions and req
 ```mermaid
 flowchart TD
     A["Physical host and upstream link"] --> B["Proxmox and virtual bridges"]
-    B --> C["OPNsense"]
-    C --> D["Lab DHCP, DNS, routing, and NAT"]
-    D --> E["Ubuntu and other lab workloads"]
+    B --> C["OPNsense VM"]
+    C --> D["OPNsense DHCP, DNS, routing, and NAT"]
+    D --> E["Ubuntu Server"]
+    D -. "after deployment" .-> F["Planned lab workloads"]
 ```
 
 | Order | Component | Dependency reason |
@@ -322,4 +331,5 @@ The following statement accurately represents the current architecture:
 
 | Date | Change |
 |---|---|
+| 2026-09-03 | Aligned every topology view with the verified `net1`/`vtnet1` WAN and `net0`/`vtnet0` LAN mapping; clarified current, planned, and console-management paths. |
 | 2026-09-02 | Replaced the incomplete initial draft with a structured living architecture document aligned with the current lab state and security-boundary format. |

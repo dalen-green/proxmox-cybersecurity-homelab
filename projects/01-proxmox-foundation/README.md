@@ -55,21 +55,24 @@ Exact IP addresses, MAC addresses, serial numbers, and storage-device identifier
 
 ```mermaid
 flowchart TD
-    A["Trusted administrative workstation"] --> R["Upstream home network"]
-    R --> N
+    A["Trusted administrative workstation"] --- R["Upstream home network"]
     subgraph H["Dell OptiPlex 7090 / Proxmox VE"]
-        N["Physical Ethernet interface"] --> B0["vmbr0: upstream bridge"]
-        B0 --> M["Proxmox management"]
-        B1["vmbr1: no physical uplink"] --> L["Future isolated lab systems"]
+        N["Physical Ethernet interface"] --- B0["vmbr0 — upstream bridge"]
+        B0 --- M["Proxmox management plane"]
+        B0 --- W["OPNsense net1 / vtnet1 — WAN (LAB-02)"]
+        W --- F["OPNsense firewall and router (LAB-02)"]
+        F --- L["OPNsense net0 / vtnet0 — LAN (LAB-02)"]
+        L --- B1["vmbr1 — internal only; no host IP or physical uplink"]
+        B1 --- U["Ubuntu Server (LAB-03)"]
     end
+    R --- N
 ```
 
-At this stage:
+This diagram shows how the LAB-01 bridge foundation is used in the current topology. OPNsense and Ubuntu are included to keep the interface mapping consistent across the repository; their implementation and validation belong to LAB-02 and LAB-03 rather than this project.
 
-- `vmbr0` connects Proxmox to the upstream private network.
-- `vmbr1` exists only inside the Proxmox host.
-- `vmbr1` has no physical Ethernet interface attached.
-- OPNsense will later become the controlled routed path between the two bridges.
+- `vmbr0` connects the physical Ethernet interface, Proxmox management plane, and OPNsense `net1` / `vtnet1` WAN.
+- `vmbr1` exists only inside the Proxmox host, has no host IP or physical uplink, and connects OPNsense `net0` / `vtnet0` LAN to Ubuntu.
+- OPNsense now provides the controlled routed path between the two bridges.
 - A bridge provides virtual switching; it does not independently provide routing or firewall enforcement.
 
 The complete current topology is documented in [`architecture.md`](../../docs/architecture.md).
@@ -122,7 +125,7 @@ It connects:
 
 - The physical Ethernet interface
 - The Proxmox management plane
-- The future OPNsense WAN interface
+- The OPNsense `net1` / `vtnet1` WAN interface, implemented in LAB-02
 
 A system connected to `vmbr0` can potentially communicate with the upstream home network. Intentionally vulnerable lab systems must therefore not connect directly to this bridge.
 
@@ -135,9 +138,9 @@ A second Linux bridge named `vmbr1` was created with:
 - No Proxmox management role
 - An active internal virtual-switch state
 
-The bridge will carry traffic among OPNsense and isolated laboratory guests.
+The bridge currently carries traffic between the OPNsense `net0` / `vtnet0` LAN interface and the Ubuntu laboratory guest.
 
-Creating `vmbr1` provides an internal virtual network without requiring a separate physical switch. However, it does not become a routed network until a router such as OPNsense connects it to another network.
+Creating `vmbr1` provides an internal virtual network without requiring a separate physical switch. By itself, the bridge provides no routing or firewall enforcement; OPNsense supplies those functions in the current topology.
 
 ## 6. Security Reasoning
 
@@ -255,7 +258,7 @@ The completed foundation provides:
 - Defined ISO and virtual-disk storage roles
 - An operational upstream bridge
 - An operational internal-only lab bridge
-- A platform ready for OPNsense and isolated guest deployment
+- A bridge foundation subsequently used by the OPNsense and Ubuntu projects
 
 This foundation supports the next two projects:
 
@@ -273,5 +276,6 @@ This foundation supports the next two projects:
 
 | Date | Change |
 |---|---|
+| 2026-09-03 | Updated the foundation diagram to show the verified current OPNsense adapter mapping and Ubuntu attachment while preserving LAB-01 scope. |
 | 2026-09-03 | Published the sanitized evidence pack with validation mapping and concise captions. |
 | 2026-09-02 | Created the initial Proxmox Foundation project documentation. |
