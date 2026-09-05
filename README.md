@@ -14,7 +14,7 @@ AI tools were used to assist with documentation organization and editing. All co
 | **[Lab Architecture](docs/architecture.md)** | Current topology, system roles, bridge and interface mapping, resource planning, data flows, and the distinction between deployed and planned systems. |
 | **[Security Boundaries](docs/security-boundaries.md)** | Trust zones, protected assets, firewall principles, verified controls, required controls, validation methods, and residual risk. |
 | **[Lessons Learned](docs/lessons-learned.md)** | Configuration mistakes, troubleshooting decisions, tested corrections, open improvements, and a reusable validation process. |
-| **[Project Roadmap](ROADMAP.md)** | Technical and portfolio status, acceptance criteria, sequencing, and the planned progression from infrastructure to monitoring and recovery. |
+| **[Project Roadmap](ROADMAP.md)** | Technical and portfolio status, acceptance criteria, and the planned progression from infrastructure through monitoring to a healthcare integration capstone and authorized testing. |
 
 ## Current State
 
@@ -23,9 +23,15 @@ AI tools were used to assist with documentation organization and editing. All co
 | `LAB-01` Proxmox foundation | **Verified** / **Published** | Proxmox is operational; repositories, updates, storage roles, `vmbr0`, and internal-only `vmbr1` are validated in the [sanitized evidence pack](projects/01-proxmox-foundation/evidence/). |
 | `LAB-02` OPNsense segmentation | **Verified for IPv4** / write-up drafting | IPv4 DHCP, DNS, NAT, and outbound access work; a representative deny rule was validated through endpoint behavior and firewall logs. |
 | `LAB-03` Ubuntu Server baseline | **In progress** | Installation, account separation, updates, OpenSSH, and UFW enablement are complete; baseline audit and recovery validation remain. |
-| `LAB-04`–`LAB-08` | **Planned** | Windows, Active Directory, vulnerability testing, Wazuh monitoring, and independent recovery testing are defined but not claimed as implemented. |
+| `LAB-04`–`LAB-09` | **Planned** | Windows endpoint security, Active Directory, Wazuh, a simulated clinical laboratory capstone with independent recovery testing, Kali control validation, and vulnerable-target assessment are defined but not claimed as implemented. |
 
 The [roadmap](ROADMAP.md) is the source of truth for detailed status and completion criteria.
+
+## Planned Progression
+
+`LAB-04` Windows 11 → `LAB-05` Windows Server / Active Directory → `LAB-06` Wazuh → `LAB-07` Secure Clinical Laboratory → `LAB-08` Kali Control Validation → `LAB-09` Vulnerable Systems and Web Applications.
+
+The planned healthcare capstone will combine the earlier components to demonstrate fictional laboratory workflows, role-based access, risk assessment, control testing, monitoring, and downtime/recovery validation. It will use synthetic data only and will not claim Epic Beaker experience, production clinical validation, or regulatory compliance. Its design documents may be drafted before implementation; the next infrastructure milestone remains Windows 11.
 
 ## Capabilities Demonstrated
 
@@ -40,4 +46,4 @@ The [roadmap](ROADMAP.md) is the source of truth for detailed status and complet
 
 A control is described as **verified** only after implementation and a repeatable test or configuration review. Evidence is selected for what it proves rather than preserved as a click-by-click installation diary. Public material excludes credentials, keys, exact upstream addresses, MAC addresses, serial numbers, and unsanitized configuration exports.
 
-All security testing is limited to systems I own or am explicitly authorized to test. Intentionally vulnerable systems will remain isolated behind OPNsense, with no router port forwarding or testing of third-party systems.
+All security testing is limited to systems I own or am explicitly authorized to test. Intentionally vulnerable systems will remain isolated behind OPNsense, with no router port forwarding or testing of third-party systems. Healthcare exercises will not use patient information or internal employer configurations.

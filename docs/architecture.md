@@ -1,7 +1,7 @@
 # Lab Architecture
 
 > **Document status:** Living document  
-> **Last updated:** 2026-09-03  
+> **Last updated:** 2026-09-05  
 > **Lab phase:** Proxmox foundation, IPv4 network segmentation, and Ubuntu Server baseline  
 > **Publication status:** Sanitized for a public portfolio
 
@@ -9,7 +9,7 @@
 
 This document describes the physical platform, virtualization layer, storage layout, virtual networks, system roles, dependencies, resource plan, and intended evolution of the Proxmox cybersecurity home lab.
 
-The architecture is designed to support practical work in virtualization, network security, Linux and Windows administration, identity management, vulnerability testing, security monitoring, and recovery testing without requiring every planned system to run simultaneously.
+The architecture is designed to support practical work in virtualization, network security, Linux and Windows administration, identity management, security monitoring, simulated healthcare workflows, recovery testing, and authorized vulnerability testing without requiring every planned system to run simultaneously.
 
 Detailed trust rules, traffic restrictions, validation requirements, and residual risks are maintained separately in [security-boundaries.md](security-boundaries.md).
 
@@ -165,16 +165,18 @@ The first Ubuntu system remains a VM instead of an LXC container so the project 
 
 ## 9. Planned Virtual Systems
 
-The following values are planning allocations, not evidence that the systems have been deployed:
+The following values are planning allocations, not evidence that the systems have been deployed. The implementation order is Windows 11 (`LAB-04`), Windows Server / Active Directory (`LAB-05`), Wazuh (`LAB-06`), healthcare integration (`LAB-07`), Kali control validation (`LAB-08`), and vulnerable-target assessment (`LAB-09`).
 
 | Planned system | Type | vCPU | RAM | Disk | Intended network role | Status |
 |---|---|---:|---:|---:|---|---|
 | Windows 11 | VM | 4 | 8 GB | 80 GB | Windows endpoint on the isolated lab network | **Planned** |
 | Windows Server | VM | 4 | 6 GB | 60 GB | Active Directory, DNS, identity, and Group Policy | **Planned** |
-| Kali Linux | VM | 2 | 4 GB | 40 GB | Authorized assessment workstation | **Planned** |
 | Wazuh | VM initially | 4 | 8 GB | 50 GB | Centralized log collection, detection, and investigation | **Planned** |
+| Kali Linux | VM | 2 | 4 GB | 40 GB | Authorized assessment workstation | **Planned** |
 | Intentionally vulnerable target | VM or application containers inside a VM | Task-dependent | Task-dependent | Task-dependent | Authorized target isolated from the upstream network | **Planned** |
 | Benign support services | Unprivileged LXC where appropriate | 1 or more | 512 MB–1 GB starting point | 8–12 GB starting point | Lightweight web, DNS, logging, or monitoring support | **Optional** |
+
+The planned clinical laboratory capstone will reuse the endpoint, identity, firewall, and monitoring foundations, adding a minimal simulated LIS or result-tracking service with synthetic data. The application platform and additional resource allocation will be selected during design; no commercial LIS, application deployment, or new internal network zone is claimed here. Any reuse or cloning of the Ubuntu baseline must preserve its existing evidence and recovery point.
 
 Windows, OPNsense, the first Ubuntu Server, Kali, Wazuh, and intentionally vulnerable full operating systems remain VMs. LXC is reserved for lightweight benign services where sharing the Proxmox Linux kernel does not undermine the exercise.
 
@@ -228,6 +230,8 @@ Recommended operating groups include:
 | Windows identity | OPNsense, Windows Server, and Windows 11 | 18 GB |
 | Authorized assessment | OPNsense, Kali, and one disposable target | Approximately 10–14 GB |
 | Monitoring exercise | OPNsense, Wazuh, and one selected endpoint | Approximately 16–20 GB |
+
+The healthcare capstone will use phased test sessions rather than assume that OPNsense, both Windows VMs, Wazuh, the simulated LIS, and Kali can run together. Actual resource use must be measured before choosing each session's guests; Kali is not required for the initial healthcare workflow, access-control, or downtime exercises.
 
 The following resource practices apply:
 
@@ -299,12 +303,15 @@ OPNsense and individual guest logs currently provide local evidence. Centralized
 
 The next architecture changes are expected to be:
 
-1. Complete the Ubuntu baseline, snapshot, and rollback exercise.
-2. Finish comprehensive management-network and IPv6 isolation validation.
-3. Add Windows 11 and Windows Server for endpoint and identity projects.
-4. Add Kali and a disposable authorized target after the required security gates are complete.
-5. Add Wazuh and selected log sources.
-6. Add independent backup storage and validate restoration.
+1. Complete the Ubuntu baseline, snapshot, and rollback exercise, and publish the remaining foundation evidence.
+2. Finish comprehensive management-network and IPv6 isolation validation before authorized attack or vulnerability testing.
+3. Add Windows 11 (`LAB-04`) and Windows Server / Active Directory (`LAB-05`) for endpoint and identity projects.
+4. Add Wazuh and selected log sources (`LAB-06`) before introducing Kali.
+5. Integrate the earlier components into a synthetic-data clinical laboratory scenario (`LAB-07`), including role-based access, selected traffic controls, monitoring, an independent backup/restore test, and downtime reconciliation.
+6. Add Kali for authorized control validation (`LAB-08`) after the required security gates are complete.
+7. Add disposable vulnerable systems and web applications for assessment, remediation, and retesting (`LAB-09`).
+
+The healthcare charter, workflow, proposed architecture, roles, and risk register may be drafted now without changing the deployed topology. Proposed subnets, VLANs, application services, and vendor-access paths must remain labeled as planned until implemented and tested.
 
 The detailed implementation sequence is maintained in [ROADMAP.md](../ROADMAP.md).
 
@@ -319,17 +326,18 @@ Public architecture evidence may include:
 - Selected addressing information for the isolated private lab subnet
 - Validation summaries tied to project evidence
 
-Public documentation must exclude credentials, tokens, private keys, public IP addresses, MAC addresses, serial numbers, raw configuration backups, and unrelated information about household devices.
+Public documentation must exclude credentials, tokens, private keys, public IP addresses, MAC addresses, serial numbers, raw configuration backups, and unrelated information about household devices. Healthcare scenarios must use synthetic data, not patient information or internal employer configurations.
 
 ## 17. Current Portfolio Description
 
 The following statement accurately represents the current architecture:
 
-> Built a dedicated Proxmox VE virtualization host with separate upstream and internal-only virtual bridges. Deployed a two-interface OPNsense VM as the routed IPv4 path to an isolated Ubuntu Server network, using VirtIO devices, DHCP, DNS forwarding, NAT, firewall policy, and logged validation. The environment is designed for staged expansion into Windows identity, authorized vulnerability testing, centralized monitoring, and recovery projects within a 32 GB resource limit.
+> Built a dedicated Proxmox VE virtualization host with separate upstream and internal-only virtual bridges. Deployed a two-interface OPNsense VM as the routed IPv4 path to an isolated Ubuntu Server network, using VirtIO devices, DHCP, DNS forwarding, NAT, firewall policy, and logged validation. The environment is designed for staged expansion into Windows identity, centralized monitoring, a simulated clinical laboratory capstone with recovery validation, and later authorized assessment projects within a 32 GB resource limit.
 
 ## 18. Change Log
 
 | Date | Change |
 |---|---|
+| 2026-09-05 | Aligned planned evolution with Windows endpoint → Active Directory → Wazuh → healthcare integration and recovery → Kali → vulnerable targets; preserved current topology and validation statuses. |
 | 2026-09-03 | Aligned every topology view with the verified `net1`/`vtnet1` WAN and `net0`/`vtnet0` LAN mapping; clarified current, planned, and console-management paths. |
 | 2026-09-02 | Replaced the incomplete initial draft with a structured living architecture document aligned with the current lab state and security-boundary format. |
