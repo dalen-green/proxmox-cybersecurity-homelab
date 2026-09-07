@@ -1,7 +1,7 @@
 # Security Boundaries
 
 > **Document status:** Living document  
-> **Last updated:** 2026-09-03  
+> **Last updated:** 2026-09-07  
 > **Lab phase:** Proxmox foundation, IPv4 network segmentation, and Ubuntu Server baseline  
 > **Publication status:** Sanitized for a public portfolio
 
@@ -88,7 +88,7 @@ The following definitions are used throughout this document:
 | `SB-02` | The Ubuntu lab endpoint connects to `vmbr1` rather than `vmbr0` | **Verified** | Confirmed through VM hardware and guest addressing |
 | `SB-03` | OPNsense `net1` / `vtnet1` WAN connects to `vmbr0`, and `net0` / `vtnet0` LAN connects to `vmbr1` | **Verified** | Confirmed through Proxmox adapter assignments and interface operation |
 | `SB-04` | OPNsense provides IPv4 DHCP, DNS forwarding, NAT, and permitted outbound access | **Verified** | Ubuntu received a lab address and reached approved internet services |
-| `SB-05` | A specific IPv4 SSH restriction is evaluated before the general LAN allow rule | **Verified** | The controlled SSH attempt was denied and recorded in the OPNsense firewall log |
+| `SB-05` | A logged IPv4 block for the controlled protected destination is evaluated before the general IPv4 LAN allow rule | **Verified** | The configured destination block was validated with one controlled SSH/TCP 22 attempt and matching OPNsense log entries |
 | `SB-06` | All IPv4 traffic from the lab subnet to protected home and management networks is denied by default | **Required** | Create or confirm a comprehensive logged block rule and test multiple protocols and management ports |
 | `SB-07` | Proxmox and OPNsense management access is unavailable from lab endpoints | **Required** | Validate from `vmbr1`; restrict management rules to the designated administrative source |
 | `SB-08` | IPv6 cannot bypass the IPv4 boundary | **Required** | Enforce equivalent IPv6 rules or disable unused IPv6 paths, then test |
@@ -107,7 +107,7 @@ The current evidence supports the claim that the IPv4 topology, OPNsense routing
 | Trusted administrative workstation | OPNsense control plane | Proxmox VM console; explicitly authorized LAN-side HTTPS only when needed | **Allow** only as required | Proxmox console operational; WAN web GUI not exposed |
 | Lab endpoint | OPNsense LAN interface | DHCP, DNS, and required gateway services | **Allow** | **Verified for IPv4** |
 | Lab endpoint | Approved internet services | DNS and required update or repository traffic | **Allow through OPNsense** | **Verified for IPv4** |
-| Lab endpoint | Designated upstream SSH test destination | TCP destination port 22 | **Deny and log** | **Verified** |
+| Lab endpoint | Protected upstream test destination | Any IPv4 protocol and port (configured); SSH over TCP destination port 22 (tested) | **Deny and log** | **Verified for the tested SSH flow only** |
 | Lab subnet | Entire protected home subnet | Any traffic | **Deny and log by default** | **Required before vulnerable targets** |
 | Lab subnet | Proxmox and OPNsense management services | Any unauthorized management traffic | **Deny and log** | **Required before vulnerable targets** |
 | Internet | Lab systems | Unsolicited inbound traffic | **Deny** | Enforced by layered NAT/firewall design; formal external test pending |
@@ -241,11 +241,12 @@ Evidence must not contain passwords, tokens, private keys, public IP addresses, 
 
 The following statement accurately represents the current level of validation:
 
-> Implemented an isolated IPv4 laboratory network in Proxmox using an internal-only virtual bridge and a two-interface OPNsense firewall. Configured DHCP, DNS forwarding, NAT, and ordered firewall policy; validated a controlled SSH restriction from an Ubuntu endpoint and correlated the denied connection with OPNsense firewall logs. Comprehensive management-network and IPv6 isolation testing remains in progress.
+> Implemented an isolated IPv4 laboratory network in Proxmox using an internal-only virtual bridge and a two-interface OPNsense firewall. Configured DHCP, DNS forwarding, NAT, and a logged protected-destination block above the broader IPv4 LAN allow rule; validated that rule with one controlled SSH/TCP 22 attempt and matching OPNsense firewall logs. Comprehensive protected-network, management-plane, and IPv6 isolation testing remains in progress.
 
 ## 15. Change Log
 
 | Date | Change |
 |---|---|
+| 2026-09-07 | Aligned `SB-05` and the portfolio claim with the published LAB-02 evidence: the configured rule blocks IPv4 traffic to one protected destination, while functional validation covers one SSH/TCP 22 flow. |
 | 2026-09-03 | Corrected the adapter-level WAN/LAN mapping in the topology and distinguished Proxmox console management from network traffic through OPNsense. |
 | 2026-09-02 | Created the initial security-boundary document from the verified Proxmox, OPNsense, and Ubuntu lab state. |

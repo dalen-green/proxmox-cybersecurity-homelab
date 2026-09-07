@@ -30,7 +30,7 @@ Portfolio documentation is tracked separately from technical implementation:
 | ID | Milestone | Lab status | Portfolio status |
 |---|---|---|---|
 | `LAB-01` | Proxmox foundation | **Verified** | **Published** |
-| `LAB-02` | OPNsense network segmentation | **Verified for IPv4** | **Drafting** |
+| `LAB-02` | OPNsense network segmentation | **Verified for IPv4** | **Published** |
 | `LAB-03` | Ubuntu Server security baseline | **In progress** | **Not started** |
 | `LAB-04` | Windows 11 endpoint security | **Planned** | **Not started** |
 | `LAB-05` | Windows Server and Active Directory | **Planned** | **Not started** |
@@ -91,21 +91,23 @@ Completed work:
 - [x] Locate the matching blocked connection in the OPNsense firewall log.
 - [x] Keep vulnerable systems off `vmbr0` and avoid router port forwarding.
 
-Remaining enhancements:
+Publication and remaining enhancements:
 
 - [ ] Validate IPv6 behavior and either enforce equivalent isolation or explicitly disable unused IPv6 paths.
-- [ ] Document the final rule logic using sanitized names and addresses.
-- [ ] Capture allowed and denied test results with explanatory captions.
+- [x] Document the final rule logic using sanitized names and addresses.
+- [x] Capture allowed and denied test results with explanatory captions.
 
 Acceptance criteria:
 
 - A lab endpoint receives an address from OPNsense.
 - Approved DNS and internet traffic works through OPNsense.
-- Prohibited traffic is denied by the intended rule.
+- The controlled IPv4 SSH flow to the protected test destination is denied by the intended rule.
 - The firewall log records the denied test.
 - No isolated target has a direct path through `vmbr0`.
 
-Planned write-up location (not yet created): `projects/02-opnsense-segmentation/`
+Repository location: [`projects/02-opnsense-segmentation/`](projects/02-opnsense-segmentation/)
+
+Published evidence: [LAB-02 evidence pack](projects/02-opnsense-segmentation/evidence/)
 
 ---
 
@@ -365,7 +367,7 @@ A milestone is marked **Published** only after its project folder contains:
 ### Now
 
 1. Finish `LAB-03`, including the Ubuntu baseline review and snapshot validation.
-2. Publish sanitized documentation for `LAB-02` and `LAB-03`.
+2. Publish sanitized documentation for `LAB-03`.
 3. Complete the remaining protected-network, management-access, and IPv6 isolation review before authorized attack or vulnerability testing.
 4. Optionally begin the `LAB-07` charter, fictional workflow, proposed architecture, roles, access matrix, and initial risk register without adding VMs or claiming implementation.
 
@@ -402,5 +404,7 @@ Healthcare scenarios use synthetic data and fictional workflows only. A simulate
 ## Revision Practice
 
 This roadmap will be updated when a milestone changes state. A status changes to **Verified** only after its acceptance criteria have been tested, and a portfolio status changes to **Published** only after the supporting evidence has been sanitized and committed.
+
+The 2026-09-07 revision publishes the sanitized `LAB-02` project and evidence pack while retaining the open protected-network, management-access, and IPv6 validation work.
 
 The 2026-09-05 revision preserves `LAB-01` through `LAB-03` and their recorded statuses, moves Wazuh ahead of Kali, adds the healthcare integration capstone as `LAB-07`, and separates initial control validation from later vulnerable-target assessment. Planned folder names align with the lab IDs; no existing project directory or evidence file was renamed.

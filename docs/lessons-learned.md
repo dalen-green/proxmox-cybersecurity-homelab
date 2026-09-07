@@ -1,7 +1,7 @@
 # Lessons Learned
 
 > **Document status:** Living document  
-> **Last updated:** 2026-09-03  
+> **Last updated:** 2026-09-07  
 > **Lab phase:** Proxmox foundation, IPv4 network segmentation, and Ubuntu Server baseline  
 > **Publication status:** Sanitized for a public portfolio
 
@@ -222,7 +222,7 @@ Browser file-selection paths should not be assumed to be real filesystem paths. 
 
 #### Situation
 
-A specific blocking rule needed to operate alongside OPNsense's broader default LAN allow rule.
+A protected-destination block needed to operate alongside OPNsense's broader default IPv4 LAN allow rule.
 
 #### Cause
 
@@ -230,8 +230,9 @@ OPNsense evaluates interface rules from top to bottom. A broad allow rule placed
 
 #### Resolution and validation
 
-- Placed the specific SSH blocking rule above the general LAN allow rule.
-- Repeated the SSH connection attempt from Ubuntu.
+- Placed the IPv4 protected-destination block above the general IPv4 LAN allow rule.
+- Applied the pending firewall ruleset.
+- Repeated a controlled SSH connection attempt from Ubuntu as the representative validation flow.
 - Confirmed that the connection was denied.
 - Located the corresponding block entry in the OPNsense firewall log.
 
@@ -248,7 +249,7 @@ Firewall behavior depends on rule order as well as source, destination, protocol
 
 #### Situation
 
-Creating the SSH rule required selecting values for both source and destination ports.
+The controlled SSH validation displayed a temporary client source port and TCP destination port 22, while the configured protected-destination block itself applied to any IPv4 protocol and port.
 
 #### Cause
 
@@ -256,7 +257,7 @@ A client normally opens a temporary high-numbered source port. It connects to th
 
 #### Resolution and validation
 
-The rule left the client source port as `any` and identified SSH by destination port 22. The subsequent denial and firewall log confirmed that the rule matched the intended traffic.
+The configured rule retained `any` for its protocol and port scope because it blocks IPv4 traffic to the selected protected destination. The firewall log identified the narrower validation flow by its temporary client source port and TCP destination port 22. Documentation therefore distinguishes the broad configured rule from the single SSH flow actually tested.
 
 #### Lesson
 
@@ -271,7 +272,7 @@ Firewall rules should describe the actual connection direction. For an outbound 
 
 #### Situation
 
-The firewall interface showed that the SSH block rule existed, but configuration alone did not prove the rule matched the intended traffic.
+The firewall interface showed that the protected-destination block existed, but configuration alone did not prove the rule matched the intended traffic.
 
 #### Resolution and validation
 
@@ -321,7 +322,7 @@ The client, network session, remote service, guest operating system, and physica
 
 #### Situation
 
-The controlled SSH test proved that the selected IPv4 rule denied TCP destination port 22 and logged the result.
+The controlled SSH test proved that the configured IPv4 protected-destination rule denied one TCP destination port 22 flow and logged the result.
 
 #### Limitation
 
@@ -570,5 +571,6 @@ Each new entry should include the situation, cause or analysis, resolution when 
 
 | Date | Change |
 |---|---|
+| 2026-09-07 | Aligned the firewall-rule lessons with the published LAB-02 evidence by separating the broad configured destination block from the narrower SSH/TCP 22 validation flow. |
 | 2026-09-03 | Corrected the recorded OPNsense adapter mapping and separated the dynamic WAN lease from the protected management path. |
 | 2026-09-02 | Created the initial lessons-learned record from the Proxmox, OPNsense, Ubuntu, firewall-validation, and repository-documentation phases. |

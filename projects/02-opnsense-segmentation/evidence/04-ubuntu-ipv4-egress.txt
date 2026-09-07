@@ -1,0 +1,5 @@
+Mon Sep  7 02:27:01 AM UTC 2026
+ens18            UP             10.10.10.149/24 metric 100 
+default via 10.10.10.1 dev ens18 proto dhcp src 10.10.10.149 metric 100 
+Link 2 (ens18): 10.10.10.1
+HTTPS example.com: 200
