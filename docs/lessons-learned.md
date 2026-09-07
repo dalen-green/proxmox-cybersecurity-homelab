@@ -52,7 +52,11 @@ Current topology and system roles are documented in [architecture.md](architectu
 | `LL-15` | Thin provisioning improves flexibility but still requires capacity monitoring | Storage management | **In use** |
 | `LL-16` | A snapshot is not an independent backup | Recovery planning | **Open improvement** |
 | `LL-17` | Public documentation must separate verified work from planned work | Portfolio practice | **In use** |
-| `LL-18` | Repository path names require exact review | Version control | **Open improvement** |
+| `LL-18` | Repository path names require exact review | Version control | **Resolved** |
+| `LL-19` | An empty Live View is not proof that traffic did not occur | Firewall logging | **Validated** |
+| `LL-20` | Temporary management paths must be removed after use | Administrative access | **Resolved** |
+| `LL-21` | Correlated UTC timestamps strengthen multi-system evidence | Evidence handling | **Validated** |
+| `LL-22` | Sanitization should remove identifiers without removing proof | Portfolio practice | **In use** |
 
 ## 4. Detailed Lessons
 
@@ -495,7 +499,7 @@ Technical implementation status and portfolio-publication status should be track
 ### `LL-18` — Repository path names require exact review
 
 **Category:** Version control  
-**Status:** Open improvement
+**Status:** Resolved
 
 #### Situation
 
@@ -509,9 +513,98 @@ Repository paths are exact strings. A visually small punctuation difference beco
 
 Repository structure should be reviewed before many files and cross-references depend on it. Names should use predictable lowercase paths, hyphens where needed, and no trailing punctuation or spaces.
 
-#### Remaining action
+#### Resolution and validation
 
-Move the documentation files from `docs./` to `docs/`, verify relative links, and remove the incorrectly named directory in a dedicated repository-organization change.
+Moved the documentation files from `docs./` to `docs/`, removed the incorrectly named directory, and verified the affected relative links. The repository now uses the conventional path consistently.
+
+---
+
+### `LL-19` — An empty Live View is not proof that traffic did not occur
+
+**Category:** Firewall logging  
+**Status:** Validated
+
+#### Situation
+
+OPNsense Live View initially returned no entries for the filter `src contains 10.10.10.149`, even though the Ubuntu endpoint was online and had already completed allowed connectivity tests.
+
+#### Analysis
+
+Live View searches recorded firewall events; it is not a packet generator or a complete packet capture. An empty result means that no retained log entry currently matches the filter. It does not, by itself, distinguish among no new test traffic, an unapplied ruleset, a rule without logging, or traffic matching a different rule.
+
+#### Resolution and validation
+
+- Confirmed that `10.10.10.149` was the Ubuntu endpoint's current DHCP lease.
+- Confirmed that the logged IPv4 protected-destination block appeared above the general IPv4 LAN allow rule.
+- Applied the pending firewall ruleset.
+- Kept Live View auto-refresh enabled with the source filter active.
+- Generated a fresh controlled SSH attempt from Ubuntu.
+- Observed matching LAN TCP/22 block entries under the intended rule label.
+
+#### Lesson
+
+A blank filtered log view is an observation, not a diagnosis. Verify the active ruleset and logging state, generate a fresh controlled event, and then correlate the result at both the endpoint and enforcement point.
+
+---
+
+### `LL-20` — Temporary management paths must be removed after use
+
+**Category:** Administrative access  
+**Status:** Resolved
+
+#### Situation
+
+The OPNsense web interface was intentionally available only from the LAN side, while the trusted workstation was on the upstream network. A temporary path was needed to administer OPNsense and recapture evidence without enabling WAN-side web administration.
+
+#### Resolution and validation
+
+A temporary runtime IPv4 address of `10.10.10.2/24` was added to Proxmox `vmbr1`, and an SSH local-forwarding session provided short-lived access to the OPNsense LAN web interface. After the evidence files were retrieved, the tunnel was closed and the temporary address was removed with `ip address del`. A subsequent IPv4-only address query returned no entry for `vmbr1`, confirming that the runtime address was gone.
+
+#### Lesson
+
+Temporary administrative access should be narrowly scoped, kept out of persistent interface configuration, used only for the required task, and explicitly removed and verified afterward. It should not become an undocumented bypass around the normal management boundary.
+
+---
+
+### `LL-21` — Correlated UTC timestamps strengthen multi-system evidence
+
+**Category:** Evidence handling  
+**Status:** Validated
+
+#### Situation
+
+Ubuntu displayed UTC even though the administrator was in another time zone, and the endpoint result needed to be matched to OPNsense firewall events.
+
+#### Resolution and validation
+
+The final Ubuntu artifact recorded the SSH attempt at `2026-09-07T02:55:56Z`. The corresponding OPNsense block sequence began at `02:55:57`, one second later, and retained the matching source, protocol, destination port, action, and rule label. The correlated artifacts are retained as `OPN-E06` and `OPN-E07` in the [LAB-02 evidence pack](../projects/02-opnsense-segmentation/evidence/).
+
+#### Lesson
+
+UTC is useful for servers and evidence because it avoids daylight-saving and local-time ambiguity. Multi-system evidence should retain an explicit time zone and be collected close enough together to support a defensible correlation.
+
+---
+
+### `LL-22` — Sanitization should remove identifiers without removing proof
+
+**Category:** Portfolio practice  
+**Status:** In use
+
+#### Situation
+
+The raw screenshots and command output contained values that were unnecessary for a public portfolio, including upstream addressing, a protected target address, virtual MAC addresses, and DHCP client identifiers.
+
+#### Resolution and validation
+
+Sensitive values were completely obscured or replaced with consistent placeholders. Claim-bearing context remained visible: lab bridge and interface names, `10.10.10.0/24` addressing, rule order and action, TCP destination port 22, timestamps, and the firewall rule label. Text and OCR-assisted scans were then used to check the publication set for unredacted management addresses and hardware identifiers.
+
+#### Lesson
+
+Sanitization should be selective. Removing too little exposes the environment; removing too much makes the evidence impossible to evaluate. Preserve the fields needed to understand the control while removing values that identify protected systems or provide no evidentiary value.
+
+#### Continuing practice
+
+Use the same placeholder for the same protected value across correlated artifacts, review both visible pixels and text content, and repeat the scan immediately before publication.
 
 ## 5. Recurring Troubleshooting Pattern
 
@@ -523,7 +616,7 @@ The work completed so far produced a reusable troubleshooting model:
 | Observe | What actually happened? | The connection result was checked from Ubuntu |
 | Localize | Which layer controls the behavior? | OPNsense LAN rule order and traffic matching |
 | Inspect | What evidence is available? | Guest command output and OPNsense firewall logs |
-| Correct | What is the smallest controlled change? | Move the specific deny rule above the general allow rule |
+| Correct | What is the smallest controlled change? | Place the protected-destination block above the general allow rule and apply the pending ruleset |
 | Retest | Did behavior change as expected? | Repeat the SSH attempt and inspect the new log entry |
 | Document | What should be retained? | Rule reasoning, test method, result, evidence, and remaining limitations |
 
@@ -548,6 +641,9 @@ The most important professional lessons demonstrated so far are:
 
 - I can distinguish a logical network diagram from the configuration that actually enforces it.
 - I validate network controls with both endpoint behavior and firewall logs.
+- I understand that filtered firewall logs show recorded rule matches rather than every packet or connection attempt.
+- I can establish a temporary management path, keep it non-persistent, and verify its removal after use.
+- I correlate multi-system evidence using explicit UTC timestamps and sanitize it without removing claim-bearing context.
 - I understand that firewall rules depend on direction, first-match order, address family, protocol, and port semantics.
 - I can explain the difference between hypervisor networking, routed firewall traffic, and same-subnet switched traffic.
 - I make virtualization decisions based on isolation and kernel requirements as well as resource efficiency.
@@ -571,6 +667,6 @@ Each new entry should include the situation, cause or analysis, resolution when 
 
 | Date | Change |
 |---|---|
-| 2026-09-07 | Aligned the firewall-rule lessons with the published LAB-02 evidence by separating the broad configured destination block from the narrower SSH/TCP 22 validation flow. |
+| 2026-09-07 | Expanded the published LAB-02 record: aligned the broad destination block with the narrower SSH/TCP 22 test and documented Live View troubleshooting, temporary access cleanup, UTC correlation, and selective evidence sanitization. |
 | 2026-09-03 | Corrected the recorded OPNsense adapter mapping and separated the dynamic WAN lease from the protected management path. |
 | 2026-09-02 | Created the initial lessons-learned record from the Proxmox, OPNsense, Ubuntu, firewall-validation, and repository-documentation phases. |
