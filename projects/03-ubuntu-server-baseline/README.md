@@ -18,7 +18,7 @@ The current implementation state is:
 - Created separate administrative and standard accounts with sudo membership limited to the administrative role
 - Installed operating-system updates
 - Configured OpenSSH access
-- Established and successfully tested an Ed25519 key-only login for the administrative account; final SSH hardening remains pending
+- Hardened OpenSSH for the administrative role and validated an Ed25519 key-only login plus password-authentication rejection
 - Enabled the UFW host firewall
 - Verified IPv4 addressing, routing, DNS, and approved HTTPS egress through OPNsense during `LAB-02`
 
@@ -42,7 +42,7 @@ The Ubuntu VM has one intended virtual network adapter on `vmbr1`. It must not r
 | `UBU-VAL-01` | Ubuntu uses `vmbr1` and obtains working IPv4 configuration through OPNsense | **Pass — supported by LAB-02 evidence** |
 | `UBU-VAL-02` | Administrative and standard accounts have intentionally different privilege levels | **Pass — separate accounts captured; sudo limited to the administrative role** |
 | `UBU-VAL-03` | Current Ubuntu version, kernel, time synchronization, and patch state are recorded | **Pass — evidence captured; two packages deferred by phased rollout** |
-| `UBU-VAL-04` | OpenSSH is enabled, active, listening as expected, and reviewed using effective settings | **Socket activation and key-only login validated — hardening and final recapture pending** |
+| `UBU-VAL-04` | OpenSSH is enabled, active, listening as expected, and reviewed using effective settings | **Pass — socket activation, hardened effective policy, key-only login, and password rejection validated** |
 | `UBU-VAL-05` | UFW is active with documented defaults and explicit rules | **Configured — validation pending** |
 | `UBU-VAL-06` | Running services, listening sockets, and relevant authentication logs are reviewed | **Not yet performed** |
 | `UBU-VAL-07` | UFW allows the approved service and blocks a controlled unapproved service from an independent lab endpoint | **Not yet performed** |
@@ -57,7 +57,6 @@ Existing `LAB-02` artifacts are referenced for Ubuntu's DHCP lease and routed IP
 ## 6. Current Limitations
 
 - Two audit-library upgrades were pending at capture time because Ubuntu deliberately deferred them through its phased rollout; no reboot was pending.
-- OpenSSH socket activation and an Ed25519 key-only administrative login are validated, but password authentication, key-based root login, X11 forwarding, and TCP forwarding remain enabled until the final hardening and lockout-safe retest are completed.
 - Running services, listening ports, and authentication logs have not yet been documented.
 - UFW has not yet been tested from an independent lab endpoint.
 - A clean snapshot and rollback test have not yet been completed.
@@ -67,18 +66,17 @@ Existing `LAB-02` artifacts are referenced for Ubuntu's DHCP lease and routed IP
 
 Until the remaining validation is complete, the accurate portfolio statement is:
 
-> Deployed an Ubuntu Server VM on the isolated Proxmox lab network, separated administrative and standard user privileges, installed updates, configured OpenSSH, and enabled UFW. Guest-level service, firewall, log, and recovery validation remains in progress.
+> Deployed an Ubuntu Server VM on the isolated Proxmox lab network, separated administrative and standard user privileges, installed updates, hardened OpenSSH for key-only administrative access, and enabled UFW. Guest-level service, firewall, log, and recovery validation remains in progress.
 
 The project remains **In progress / Drafting** until the evidence pack passes its publication checklist.
 
 ## 8. Next Actions
 
-1. Apply and validate the final SSH hardening, then recapture the consolidated SSH and socket evidence.
-2. Capture UFW, service, and log evidence.
-3. Review the results and correct any unexpected exposure before calling the baseline verified.
-4. Validate UFW from an independent source on `vmbr1`.
-5. Create a labeled snapshot, make one controlled change, roll back, and verify service health.
-6. Complete sanitization and cross-document consistency review before publication.
+1. Capture UFW, service, and log evidence.
+2. Review the results and correct any unexpected exposure before calling the baseline verified.
+3. Validate UFW from an independent source on `vmbr1`.
+4. Create a labeled snapshot, make one controlled change, roll back, and verify service health.
+5. Complete sanitization and cross-document consistency review before publication.
 
 ## 9. Related Documentation
 
@@ -93,6 +91,7 @@ The project remains **In progress / Drafting** until the evidence pack passes it
 
 | Date | Change |
 |---|---|
+| 2026-09-09 | Hardened OpenSSH for public-key-only administrative access, denied root login, reduced authentication attempts, disabled forwarding features, completed lockout-safe positive and negative client tests, and added the reviewed consolidated SSH artifact. |
 | 2026-09-09 | Confirmed Ubuntu's systemd SSH socket activation and successfully tested an Ed25519 key-only administrative login; retained SSH hardening and final evidence recapture as open work. |
 | 2026-09-08 | Added reviewed VM-hardware, Ubuntu platform/update, and account-separation evidence; recorded the completed reboot and phased deferral of two audit-library packages; created a standard account and verified that sudo remains limited to the administrative role. |
 | 2026-09-07 | Created the LAB-03 drafting outline and separated completed setup activities from pending guest, firewall, log, and recovery validation. |

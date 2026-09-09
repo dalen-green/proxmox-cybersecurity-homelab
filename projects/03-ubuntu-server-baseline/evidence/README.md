@@ -2,7 +2,7 @@
 
 > **Technical status:** In progress  
 > **Portfolio status:** Drafting — evidence collection in progress  
-> **Evidence captured:** 3 of 9 core artifacts reviewed  
+> **Evidence captured:** 4 of 9 core artifacts reviewed  
 > **Last reviewed:** 2026-09-09
 
 ## 1. Purpose
@@ -35,7 +35,7 @@ These artifacts validate network participation and the routed firewall path. The
 | `UBU-E01` | [`01-proxmox-ubuntu-hardware.png`](01-proxmox-ubuntu-hardware.png) | **Captured — reviewed** | VM `101` has one intended network adapter on `vmbr1`, with its relevant CPU, memory, disk, and startup configuration visible |
 | `UBU-E02` | [`02-ubuntu-platform-and-updates.txt`](02-ubuntu-platform-and-updates.txt) | **Captured — reviewed** | Ubuntu 26.04.1 LTS platform state, synchronized UTC time, successful metadata refresh, completed reboot, and two explicitly identified upgrades deferred by phased rollout |
 | `UBU-E03` | [`03-ubuntu-account-separation.txt`](03-ubuntu-account-separation.txt) | **Captured — reviewed** | Separate interactive administrative and standard accounts use Bash shells, with only the administrative role holding sudo-group membership |
-| `UBU-E04` | `04-ubuntu-services-and-ssh.txt` | **Working validation complete — final recapture pending** | OpenSSH socket activation and a forced Ed25519 key-only login are validated; broader-than-needed effective settings require hardening before final capture |
+| `UBU-E04` | [`04-ubuntu-services-and-ssh.txt`](04-ubuntu-services-and-ssh.txt) | **Captured — reviewed** | Valid OpenSSH syntax, socket activation, TCP/22 listeners, and hardened effective settings; lockout-safe client tests also validated key login and password rejection |
 | `UBU-E05` | `05-ubuntu-ufw-status.txt` | **Needed** | UFW active state, default policy, logging state, and explicit allow rules |
 | `UBU-E06` | `06-ubuntu-services-and-auth-log.txt` | **Needed** | Reviewed running services and a short, timestamped authentication-log excerpt from a controlled event |
 | `UBU-E07` | `07-ubuntu-ufw-independent-test.txt` | **Needed** | An independent source on `vmbr1` reaches an approved service while a controlled unapproved listening service is blocked and logged by UFW |
@@ -122,9 +122,9 @@ The collection command replaces account names with consistent role-based labels 
 
 ### `UBU-E04` — Services, SSH, and listening sockets
 
-The initial capture showed valid syntax, an active SSH daemon, and TCP/22 listening on IPv4 and IPv6. A follow-up diagnostic confirmed that `ssh.socket` is enabled and active, holds both listeners, and activates `ssh.service`; the service's disabled unit-file state is therefore intentional rather than a startup failure. A forced Ed25519 key-only login then succeeded for the administrative account. Password authentication, key-based root login, X11 forwarding, and TCP forwarding remain enabled in the initial state. Complete the approved hardening plan before recapturing the publication artifact.
+The initial capture showed valid syntax and TCP/22 listeners but also exposed broader-than-needed settings. A follow-up diagnostic established that Ubuntu uses `ssh.socket` to hold both listeners and activate `ssh.service`; the service's disabled unit-file state is therefore intentional rather than a startup failure.
 
-The working SSH capture and activation diagnostic are not included as core artifacts. The final `UBU-E04` recapture will consolidate the validated activation model, hardened effective settings, and listening sockets without retaining superseded intermediate files.
+The administrative account was enrolled with an Ed25519 public key before hardening. After validating the proposed settings with `sshd -t` and `sshd -T`, the configuration was reloaded while an existing administrative session remained open. A new forced key-only connection succeeded, and separate client attempts with public-key authentication disabled were rejected without a password prompt. The working screenshots are not published because they contain client and server identifiers; the consolidated artifact records the resulting effective server policy.
 
 Run:
 
@@ -144,15 +144,17 @@ Run:
   systemctl is-active ssh.socket
   systemctl list-sockets ssh.socket --no-pager
   printf '\n%s\n' 'Selected effective SSH settings:'
-  sudo sshd -T | grep -E '^(port|addressfamily|listenaddress|permitrootlogin|passwordauthentication|pubkeyauthentication|kbdinteractiveauthentication|permitemptypasswords|maxauthtries|x11forwarding|allowtcpforwarding|allowagentforwarding|allowusers|allowgroups) '
-  printf '\n%s\n' 'Listening sockets:'
-  sudo ss -lntup
+  sudo sshd -T |
+    grep -E '^(port|addressfamily|listenaddress|maxauthtries|permitrootlogin|pubkeyauthentication|passwordauthentication|kbdinteractiveauthentication|permitemptypasswords|authenticationmethods|x11forwarding|disableforwarding|allowtcpforwarding|allowstreamlocalforwarding|allowagentforwarding|allowusers) ' |
+    sed -E 's/^allowusers .*/allowusers admin_username/'
+  printf '\n%s\n' 'SSH listening sockets:'
+  sudo ss -lntp '( sport = :22 )'
 } 2>&1 | tee ~/04-ubuntu-services-and-ssh.txt
 ```
 
 Do not publish private keys, authorized-key contents, password hashes, or the complete SSH configuration file.
 
-> **Draft caption:** Timestamped Ubuntu output showing valid OpenSSH configuration syntax, enablement and runtime state, selected effective security settings, and the host's listening sockets.
+> **Caption:** Timestamped Ubuntu output showing valid OpenSSH syntax; enabled and active socket activation; active daemon state; IPv4 and IPv6 TCP/22 listeners; public-key-only authentication for the administrative role; denied root login; reduced authentication attempts; and disabled password, keyboard-interactive, agent, TCP, stream-local, and X11 forwarding paths. The account name is replaced by a stable role label.
 
 ### `UBU-E05` — UFW policy
 
@@ -243,7 +245,7 @@ Redaction must cover each protected value completely without hiding the surround
 - [x] VM `101` has one intended network adapter on `vmbr1` and none on `vmbr0`.
 - [x] Account evidence distinguishes administrative and standard privileges.
 - [x] Current patch state is recorded after refreshing package metadata.
-- [ ] Effective SSH settings, runtime state, and listening sockets have been reviewed.
+- [x] Effective SSH settings, runtime state, and listening sockets have been reviewed.
 - [ ] UFW configuration and independent allow/block behavior both have evidence.
 - [ ] Authentication evidence is short, relevant, timestamped, and sanitized.
 - [ ] Snapshot existence and successful rollback are supported by different evidence.
