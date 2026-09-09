@@ -31,7 +31,7 @@ Portfolio documentation is tracked separately from technical implementation:
 |---|---|---|---|
 | `LAB-01` | Proxmox foundation | **Verified** | **Published** |
 | `LAB-02` | OPNsense network segmentation | **Verified for IPv4** | **Published** |
-| `LAB-03` | Ubuntu Server security baseline | **In progress** | **Not started** |
+| `LAB-03` | Ubuntu Server security baseline | **In progress** | **Drafting** |
 | `LAB-04` | Windows 11 endpoint security | **Planned** | **Not started** |
 | `LAB-05` | Windows Server and Active Directory | **Planned** | **Not started** |
 | `LAB-06` | Wazuh monitoring and detection | **Planned** | **Not started** |
@@ -136,7 +136,8 @@ Acceptance criteria:
 - Relevant authentication and service events can be located in system logs.
 - The clean baseline can be restored successfully.
 
-Planned write-up location (not yet created): `projects/03-ubuntu-server-baseline/`
+Progress write-up: [`projects/03-ubuntu-server-baseline/`](projects/03-ubuntu-server-baseline/)  
+Progress evidence: [`projects/03-ubuntu-server-baseline/evidence/`](projects/03-ubuntu-server-baseline/evidence/)
 
 ---
 
@@ -404,6 +405,8 @@ Healthcare scenarios use synthetic data and fictional workflows only. A simulate
 ## Revision Practice
 
 This roadmap will be updated when a milestone changes state. A status changes to **Verified** only after its acceptance criteria have been tested, and a portfolio status changes to **Published** only after the supporting evidence has been sanitized and committed.
+
+The 2026-09-09 revision adds an in-progress `LAB-03` write-up and three reviewed evidence artifacts while retaining SSH hardening, UFW testing, service/log review, and recovery validation as open work.
 
 The 2026-09-07 revision publishes the sanitized `LAB-02` project and evidence pack while retaining the open protected-network, management-access, and IPv6 validation work.
 

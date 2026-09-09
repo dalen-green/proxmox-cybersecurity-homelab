@@ -23,7 +23,7 @@ AI tools were used to assist with documentation organization and editing. All co
 |---|---|---|
 | `LAB-01` Proxmox foundation | **Verified** / **Published** | Proxmox is operational; repositories, updates, storage roles, `vmbr0`, and internal-only `vmbr1` are validated in the [sanitized evidence pack](projects/01-proxmox-foundation/evidence/). |
 | `LAB-02` OPNsense segmentation | **Verified for IPv4** / **Published** | IPv4 DHCP, DNS, NAT, and outbound access work; a protected-destination rule was validated with a controlled SSH/TCP 22 attempt and matching [sanitized firewall evidence](projects/02-opnsense-segmentation/evidence/). |
-| `LAB-03` Ubuntu Server baseline | **In progress** | Installation, account separation, updates, OpenSSH, and UFW enablement are complete; baseline audit and recovery validation remain. |
+| [`LAB-03` Ubuntu Server baseline](projects/03-ubuntu-server-baseline/) | **In progress** / **Drafting** | VM hardware, patch state, and admin/standard privilege separation have reviewed evidence; SSH hardening, UFW validation, service/log review, and recovery testing remain. |
 | `LAB-04`–`LAB-09` | **Planned** | Windows endpoint security, Active Directory, Wazuh, a simulated clinical laboratory capstone with independent recovery testing, Kali control validation, and vulnerable-target assessment are defined but not claimed as implemented. |
 
 The [roadmap](ROADMAP.md) is the source of truth for detailed status and completion criteria.
