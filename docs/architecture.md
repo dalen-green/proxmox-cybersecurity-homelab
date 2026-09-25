@@ -1,343 +1,195 @@
 # Lab Architecture
 
-> **Document status:** Living document  
-> **Last updated:** 2026-09-05  
-> **Lab phase:** Proxmox foundation, IPv4 network segmentation, and Ubuntu Server baseline  
-> **Publication status:** Sanitized for a public portfolio
+> **Document status:** Living learning notes\
+> **Last updated:** 2026-09-25\
+> **Current work:** Proxmox foundation, OPNsense networking, and the Ubuntu baseline
 
-## 1. Purpose
+## What I am building
 
-This document describes the physical platform, virtualization layer, storage layout, virtual networks, system roles, dependencies, resource plan, and intended evolution of the Proxmox cybersecurity home lab.
+This is my first hands-on IT lab. My background is in microbiology, so I am learning how servers, virtual machines, and networks fit together as I build them. I want these notes to explain why I chose a setting and how I checked it, including the parts I still need to understand or test.
 
-The architecture is designed to support practical work in virtualization, network security, Linux and Windows administration, identity management, security monitoring, simulated healthcare workflows, recovery testing, and authorized vulnerability testing without requiring every planned system to run simultaneously.
+I use a dedicated Dell OptiPlex to run several virtual machines, or VMs. Each VM acts like a separate computer with its own operating system. Proxmox manages those VMs, OPNsense handles traffic between the lab and my home network, and Ubuntu is where I am practicing Linux administration.
 
-Detailed trust rules, traffic restrictions, validation requirements, and residual risks are maintained separately in [security-boundaries.md](security-boundaries.md).
+This document describes the setup recorded in the repository. The [security boundaries](security-boundaries.md) explain the protections and remaining gaps. The [lessons learned](lessons-learned.md) explain the problems I worked through.
 
-## 2. Design Goals
+## Where each project stands
 
-The lab architecture follows six goals:
-
-1. **Isolation:** Laboratory systems use an internal virtual network rather than connecting directly to the home network.
-2. **Controlled connectivity:** OPNsense is the intended routed path between the lab and upstream networks.
-3. **Resource efficiency:** Workloads are started in task-specific groups that fit within the host's 32 GB of RAM.
-4. **Realistic administration:** Core systems use full virtual machines when an independent operating-system kernel or stronger isolation is valuable.
-5. **Recoverability:** Snapshots and later independent backups support controlled changes and restoration exercises.
-6. **Documented growth:** Current systems and future systems are clearly distinguished so the repository does not claim unfinished work as operational.
-
-## 3. Current Architecture Summary
-
-| Layer | Current implementation | Status |
+| Project | What I have built | What remains |
 |---|---|---|
-| Physical host | Dedicated Dell OptiPlex 7090 SFF | **Operational** |
-| Hypervisor | Proxmox VE on node `pve` | **Operational** |
-| Upstream bridge | `vmbr0`, connected to the physical Ethernet interface | **Operational** |
-| Isolated bridge | `vmbr1`, with no physical uplink | **Operational** |
-| Network boundary | Two-interface OPNsense virtual machine | **Operational for IPv4** |
-| First endpoint | Ubuntu Server virtual machine on `vmbr1` | **Baseline in progress** |
-| Windows, Kali, and Wazuh systems | Defined in the roadmap but not yet deployed | **Planned** |
-| Independent backup and restore architecture | Not yet implemented or tested | **Planned** |
+| [LAB-01: Proxmox](../projects/01-proxmox-foundation/) | The physical host, storage, web management, and two virtual bridges | Independent backup and recovery work is still planned |
+| [LAB-02: OPNsense](../projects/02-opnsense-segmentation/) | IPv4 lab networking and a logged block tested with one SSH connection | Broader protected-network, management-access, and IPv6 checks |
+| [LAB-03: Ubuntu](../projects/03-ubuntu-server-baseline/) | The VM, separate accounts, recorded updates, hardened SSH, and active UFW | Full service/port/log review, independent firewall tests, and snapshot/rollback evidence |
+| LAB-04 through LAB-09 | Plans in the [roadmap](../ROADMAP.md) | Implementation has not started |
+
+The saved evidence records particular dates. Updating these notes does not mean that I reran the lab or collected a fresh system inventory.
+
+## How the network fits together
+
+A **bridge** is a virtual Ethernet switch. The two bridges in Proxmox let me connect VMs to different networks without buying another physical switch.
 
 ```mermaid
 flowchart TD
-    I["Internet"] --- R["Home router"]
-    subgraph H["Dell OptiPlex 7090 / Proxmox VE"]
-        N["Physical Ethernet interface"] --- B0["vmbr0 — upstream bridge"]
-        B0 --- P["Proxmox management plane"]
-        B0 --- W["OPNsense net1 / vtnet1 — WAN"]
-        W --- F["OPNsense firewall, routing, and NAT"]
-        F --- L["OPNsense net0 / vtnet0 — LAN (10.10.10.1/24)"]
-        L --- B1["vmbr1 — internal only; no host IP or physical uplink"]
-        B1 --- U["Ubuntu Server — lab DHCP client"]
-        B1 -. "planned attachment" .-> X["Windows, Kali, Wazuh, and targets"]
+    I["Internet"] --- R["Home router and home network"]
+    A["Windows workstation"] --- R
+    subgraph H["Dell OptiPlex running Proxmox"]
+        N["Physical Ethernet port"] --- B0["vmbr0: home network bridge"]
+        B0 --- P["Proxmox management"]
+        B0 --- W["OPNsense WAN: net1 / vtnet1"]
+        W --- F["OPNsense routing and firewall"]
+        F --- L["OPNsense LAN: net0 / vtnet0"]
+        L --- B1["vmbr1: internal lab bridge"]
+        B1 --- U["Ubuntu VM 101"]
     end
     R --- N
+    P -. "Temporary SSH forwarding via 10.10.10.2" .-> B1
 ```
 
-Solid lines show the current physical and virtual network path. The dashed line marks systems that are planned rather than deployed. The explicit adapter labels reflect the verified mapping instead of assuming that Proxmox adapter order matches WAN/LAN order.
+The solid lines show the normal network connections. The dotted line shows a temporary management path used during setup and Ubuntu administration; it needs to be enabled deliberately and cleaned up afterward. It is explained below because it changes how management traffic reaches the lab.
 
-The home router remains the household internet-edge router. OPNsense operates behind it and creates a second, lab-specific network boundary.
+The home router still connects my household to the internet. OPNsense sits behind that router and manages a separate lab subnet, `10.10.10.0/24`. Its lab-side gateway address is `10.10.10.1`.
 
-## 4. Physical Platform
+### Why WAN goes to vmbr0 and LAN goes to vmbr1
 
-| Resource | Current platform | Architectural purpose |
-|---|---|---|
-| Host | Dell OptiPlex 7090 SFF | Dedicated hardware for the cybersecurity lab |
-| Processor | Intel Core i7 | Provides hardware virtualization and sufficient CPU capacity for several concurrent lab workloads |
-| Memory | 32 GB RAM | Shared by Proxmox, OPNsense, and whichever lab systems are needed for the current exercise |
-| Primary storage | Local solid-state storage managed by Proxmox | Stores the hypervisor, installation media, and virtual disks |
-| Networking | One active physical Ethernet connection | Connects `vmbr0` to the upstream private network |
-| Display and input | Used primarily for local recovery and initial installation | Routine administration occurs remotely from a trusted workstation |
+**WAN** is OPNsense's upstream side. In this setup, that means my existing private home network. **LAN** is its lab-facing side. These names describe the interfaces' jobs; WAN does not have to mean a public internet address.
 
-Exact serial numbers, MAC addresses, upstream addresses, and storage-device identifiers are intentionally excluded from the public repository.
-
-## 5. Proxmox and Storage Architecture
-
-Proxmox VE is the bare-metal hypervisor. It creates and schedules the virtual CPU, memory, disk, and network devices presented to each guest operating system.
-
-### Proxmox node
-
-| Setting | Value | Meaning |
-|---|---|---|
-| Node name | `pve` | Identifies the current physical Proxmox host |
-| Node count | One | The lab is not a Proxmox cluster and does not provide high availability |
-| Management path | Trusted upstream private network through `vmbr0` | Allows web-based and administrative access without placing management directly on the lab bridge |
-
-### Storage roles
-
-| Proxmox storage | Primary use | Notes |
-|---|---|---|
-| `local` | ISO images, container templates, and selected host files | Installation media is stored separately from guest virtual disks |
-| `local-lvm` | VM and LXC virtual disks | LVM-thin supports efficient block storage and thin provisioning |
-
-Thin provisioning means the maximum size assigned to a virtual disk is not necessarily consumed immediately. Physical storage usage increases as the guest writes data. Thin provisioning improves flexibility, but free space still requires monitoring because allocated virtual capacity can exceed immediately available physical capacity.
-
-Proxmox snapshots will support short-term rollback during experiments. They are not treated as independent backups because they remain dependent on the same host and storage pool.
-
-## 6. Virtual Network Architecture
-
-### Bridge and interface mapping
-
-| Proxmox component | Connection | Current role | Status |
-|---|---|---|---|
-| Physical Ethernet interface | Upstream home router or private network | Physical path outside the Proxmox host | **Operational** |
-| `vmbr0` | Physical Ethernet interface | Upstream virtual switch for Proxmox management and OPNsense WAN | **Operational** |
-| OPNsense VM `net1` / guest `vtnet1` | `vmbr0` | WAN-facing virtual network adapter | **Operational** |
-| OPNsense VM `net0` / guest `vtnet0` | `vmbr1` | LAN-facing virtual network adapter | **Operational** |
-| `vmbr1` | No physical interface | Internal-only virtual switch for laboratory systems | **Operational** |
-| Ubuntu virtual NIC | `vmbr1` | First guest endpoint on the isolated network | **Operational** |
-
-`vmbr0` and `vmbr1` are virtual Ethernet switches. They do not independently perform routing or firewall inspection. OPNsense performs those functions because it has one virtual adapter on each bridge.
-
-### Layer 2 and Layer 3 behavior
-
-- Systems on `vmbr0` share an upstream Layer 2 network with the physical Ethernet connection.
-- Systems on `vmbr1` share an internal Layer 2 network that exists only inside the Proxmox host.
-- Traffic traveling from `vmbr1` to an upstream or internet destination must use OPNsense as its Layer 3 gateway.
-- Two systems on the same `vmbr1` subnet can communicate directly at Layer 2; ordinary same-subnet traffic does not pass through OPNsense.
-- Connecting a lab VM directly to `vmbr0`, or giving it a second `vmbr0` adapter, would bypass the intended OPNsense path.
-
-## 7. Addressing and Network Services
-
-| Network or service | Current design | Publication treatment |
-|---|---|---|
-| Upstream private subnet | Existing home network managed by the home router | Exact addresses are omitted |
-| Proxmox management address | Address on the upstream private network | Exact address is omitted |
-| OPNsense WAN address | Private upstream address supplied or reserved through the home network | Exact address is omitted because it may change |
-| Isolated lab subnet | `10.10.10.0/24` | Published because it is a non-routable private lab range |
-| OPNsense LAN gateway | `10.10.10.1` | Default gateway for the isolated lab subnet |
-| Lab addressing | OPNsense DHCP scope within the lab subnet | Individual leases are omitted |
-| DNS | Lab clients send requests through the OPNsense-provided configuration | **Operational for IPv4** |
-| NAT | OPNsense translates permitted lab traffic toward its upstream interface | **Operational for IPv4** |
-
-The WAN address is expected to change if it is assigned dynamically by the home router. Documentation therefore identifies the interface by role rather than relying on one temporary address.
-
-## 8. Current Virtual Systems
-
-### OPNsense
-
-| Attribute | Current design |
+| Connection | What it does in my lab |
 |---|---|
-| Virtualization type | Full QEMU/KVM virtual machine |
-| Guest platform | FreeBSD-based OPNsense |
-| CPU | 2 virtual CPU cores |
-| Memory | 4096 MiB with ballooning disabled |
-| Virtual disk | 32 GiB on `local-lvm` |
-| Firmware and machine | OVMF/UEFI with Q35 machine type |
-| Disk interface | VirtIO SCSI |
-| Network interfaces | `net1` on `vmbr0` appears as `vtnet1` (WAN); `net0` on `vmbr1` appears as `vtnet0` (LAN) |
-| Current services | IPv4 routing, firewall policy, DHCP, DNS forwarding, NAT, and logging |
-| Status | **Operational for IPv4** |
+| Physical Ethernet port → `vmbr0` | Connects Proxmox to the home network |
+| Proxmox management → `vmbr0` | Lets my Windows workstation manage the host |
+| OPNsense `net1` → `vmbr0`; guest name `vtnet1` | Gives OPNsense its WAN connection |
+| OPNsense `net0` → `vmbr1`; guest name `vtnet0` | Gives OPNsense its LAN connection |
+| Ubuntu `net0` → `vmbr1` | Places Ubuntu on the lab network |
 
-OPNsense remains a full VM because it uses FreeBSD, requires its own kernel, and serves as foundational network infrastructure. Stable RAM is preferred over memory ballooning for this role.
+I originally found the names confusing. Proxmox calls the OPNsense adapters `net0` and `net1`, while OPNsense calls them `vtnet0` and `vtnet1`. I checked the mapping on both systems instead of assuming that adapter zero must be WAN.
 
-### Ubuntu Server
+`vmbr1` has no physical uplink and no permanent Proxmox IPv4 address in the documented design. It is an internal switch, but that alone does not block every route to the home network. OPNsense supplies the normal routed connection, and its rules determine which traffic can pass. Adding a second adapter on `vmbr0` to a lab VM would give it another path around that design.
 
-| Attribute | Current design |
+### What happens when Ubuntu connects to a website
+
+1. Ubuntu gets its IPv4 settings from OPNsense using DHCP, which assigns network settings automatically.
+2. Ubuntu uses the configured DNS service at `10.10.10.1` to look up a website's address.
+3. Traffic for another network goes to its default gateway, also `10.10.10.1`.
+4. OPNsense checks the applicable firewall policy and uses network address translation (NAT) for permitted outbound IPv4 traffic.
+5. The traffic continues through `vmbr0` and the home router. Connection tracking helps the replies return to Ubuntu.
+
+The [LAB-02 output](../projects/02-opnsense-segmentation/evidence/04-ubuntu-ipv4-egress.txt) records the lab address, gateway, DNS setting, and an HTTPS response. It demonstrates the tested connection. The current broad LAN allow rule is not a website or software-repository allowlist.
+
+Two VMs on the same `vmbr1` subnet can communicate directly through that bridge. Their ordinary traffic does not pass through OPNsense. This is one reason I am also learning to configure Ubuntu's own firewall.
+
+## How I manage the systems
+
+| Task | Documented access path |
 |---|---|
-| Virtualization type | Full QEMU/KVM virtual machine |
-| Network | One virtual adapter on `vmbr1` |
-| Role | Linux administration, SSH, firewall, service, port, user, and logging baseline |
-| Completed work | Installation, separate accounts, updates, OpenSSH, and UFW enablement |
-| Remaining work | Baseline audit, SSH review, external UFW validation, snapshot, and rollback test |
-| Status | **In progress** |
+| Manage Proxmox | Windows workstation → home network → Proxmox on `vmbr0` |
+| Open a VM console | Proxmox web interface → selected VM console |
+| Reach the OPNsense LAN web interface during setup | SSH tunnel through Proxmox with a temporary lab-side address |
+| Reach Ubuntu over SSH during LAB-03 | Local SSH forwarding through Proxmox; Ubuntu sees the connection from `10.10.10.2` |
 
-The first Ubuntu system remains a VM instead of an LXC container so the project includes experience with a complete guest operating system, independent kernel, boot process, virtual disk, services, host firewall, and snapshot lifecycle.
+For temporary LAN access, I used the runtime address `10.10.10.2/24` on Proxmox's `vmbr1`. This lets Proxmox open a connection to the lab-side destination on behalf of the workstation. That connection stays on the lab subnet and does not pass through OPNsense's routed LAN-to-WAN rules.
 
-## 9. Planned Virtual Systems
+The LAB-02 notes record removal of the earlier temporary address and tunnel. Later LAB-03 work uses that management source again, and the September 25 UFW evidence permits SSH from `10.10.10.2`. The latest evidence does not include a new cleanup check. I therefore cannot describe the temporary address as currently absent based on the earlier cleanup alone.
 
-The following values are planning allocations, not evidence that the systems have been deployed. The implementation order is Windows 11 (`LAB-04`), Windows Server / Active Directory (`LAB-05`), Wazuh (`LAB-06`), healthcare integration (`LAB-07`), Kali control validation (`LAB-08`), and vulnerable-target assessment (`LAB-09`).
+This also explains why Ubuntu can receive an administrative SSH connection even though the LAB-02 test blocked an SSH connection going from Ubuntu toward a protected upstream destination. The source, destination, direction, and path are different.
 
-| Planned system | Type | vCPU | RAM | Disk | Intended network role | Status |
-|---|---|---:|---:|---:|---|---|
-| Windows 11 | VM | 4 | 8 GB | 80 GB | Windows endpoint on the isolated lab network | **Planned** |
-| Windows Server | VM | 4 | 6 GB | 60 GB | Active Directory, DNS, identity, and Group Policy | **Planned** |
-| Wazuh | VM initially | 4 | 8 GB | 50 GB | Centralized log collection, detection, and investigation | **Planned** |
-| Kali Linux | VM | 2 | 4 GB | 40 GB | Authorized assessment workstation | **Planned** |
-| Intentionally vulnerable target | VM or application containers inside a VM | Task-dependent | Task-dependent | Task-dependent | Authorized target isolated from the upstream network | **Planned** |
-| Benign support services | Unprivileged LXC where appropriate | 1 or more | 512 MB–1 GB starting point | 8–12 GB starting point | Lightweight web, DNS, logging, or monitoring support | **Optional** |
+OPNsense's WAN web interface is not part of the documented administration method. I have not configured home-router port forwarding for these management services. A complete management-access denial test is still outstanding.
 
-The planned clinical laboratory capstone will reuse the endpoint, identity, firewall, and monitoring foundations, adding a minimal simulated LIS or result-tracking service with synthetic data. The application platform and additional resource allocation will be selected during design; no commercial LIS, application deployment, or new internal network zone is claimed here. Any reuse or cloning of the Ubuntu baseline must preserve its existing evidence and recovery point.
+## The physical host and storage
 
-Windows, OPNsense, the first Ubuntu Server, Kali, Wazuh, and intentionally vulnerable full operating systems remain VMs. LXC is reserved for lightweight benign services where sharing the Proxmox Linux kernel does not undermine the exercise.
+| Resource | Recorded setup |
+|---|---|
+| Computer | Dell OptiPlex 7090 SFF |
+| Processor | Intel Core i7 |
+| Memory | 32 GB RAM shared by Proxmox and active VMs |
+| Storage | Local solid-state storage |
+| Network | One active physical Ethernet connection |
+| Proxmox node | `pve`; one standalone host |
 
-Vulnerable application containers should run inside a disposable VM rather than directly against the Proxmox host kernel.
+Proxmox is installed directly on the OptiPlex. This is called a **bare-metal hypervisor**: it manages the physical computer and provides virtual hardware to the guest operating systems.
 
-## 10. Primary Data Flows
+The two storage names initially looked interchangeable to me, but they have different uses:
 
-| Flow | Path | Current purpose |
+| Storage | How I use it |
+|---|---|
+| `local` | Installation ISO files and other supported file content; the configured store also supports local backups |
+| `local-lvm` | Virtual disks for the guest systems |
+
+`local-lvm` uses thin provisioning, so a VM's advertised disk capacity does not have to be fully consumed on the physical drive immediately. I still need to watch actual free space as the VMs write data.
+
+A backup saved on the same physical drive would still share that drive's failure risk. Independent backup storage and a tested restore are future work.
+
+## The VMs I have now
+
+| Setting | OPNsense | Ubuntu Server |
 |---|---|---|
-| Proxmox administration | Trusted workstation → upstream network → `vmbr0` → Proxmox | Hypervisor and guest administration |
-| OPNsense console administration | Trusted workstation → upstream network → `vmbr0` → Proxmox management → OPNsense VM console | Firewall and network administration without exposing the web GUI on WAN |
-| Lab DHCP | Ubuntu → `vmbr1` → OPNsense LAN service | Supplies the guest's IPv4 configuration |
-| Lab DNS | Ubuntu → `vmbr1` → OPNsense → approved resolver path | Resolves approved domain names |
-| Lab internet access | Ubuntu → `vmbr1` → OPNsense → `vmbr0` → home router → internet | Updates and approved external resources |
-| Return traffic | Internet or upstream service → home router → OPNsense → `vmbr1` → Ubuntu | Returns traffic for an allowed, stateful connection |
-| Same-subnet lab traffic | Lab VM → `vmbr1` → lab VM | Direct east-west traffic that ordinarily bypasses OPNsense inspection |
+| VM ID | `100` | `101` |
+| Role | Lab gateway and network firewall | Linux administration and security baseline |
+| CPU | 2 virtual cores | 2 virtual cores |
+| Memory shown in hardware evidence | 4 GiB, ballooning disabled | `2.00 GiB / 4.00 GiB`; both values are retained here rather than describing it as a fixed 2 GiB allocation |
+| Main virtual disk | 32 GiB on `local-lvm` | 40 GiB on `local-lvm` |
+| Firmware / machine | OVMF UEFI / Q35 | OVMF UEFI / Q35 |
+| Network | WAN on `vmbr0`; LAN on `vmbr1` | One adapter on `vmbr1` |
+| Recorded guest release | OPNsense 26.7 | Ubuntu 26.04.1 LTS |
 
-The OPNsense web GUI is not exposed on its WAN interface. Initial GUI bootstrap used a temporary LAN-side Proxmox path and an SSH tunnel; that temporary host path was removed after setup and is not part of the current data-plane topology.
+These values come from the project evidence, including the [OPNsense hardware view](../projects/02-opnsense-segmentation/evidence/01-proxmox-opnsense-nics.png) and [Ubuntu hardware view](../projects/03-ubuntu-server-baseline/evidence/01-proxmox-ubuntu-hardware.png). I still need a configuration review to explain Ubuntu's memory settings fully.
 
-Firewall-policy details and the difference between verified restrictions and required future restrictions are documented in [security-boundaries.md](security-boundaries.md).
+I kept these systems as full VMs. OPNsense uses FreeBSD and needs its own operating-system kernel. Ubuntu gives me practice with a complete Linux system, including its boot process, accounts, services, firewall, and recovery. An LXC container shares the Proxmox Linux kernel; I may use unprivileged containers later for lightweight support services.
 
-## 11. Service Dependencies and Startup Order
+## How I plan to grow the lab
 
-```mermaid
-flowchart TD
-    A["Physical host and upstream link"] --> B["Proxmox and virtual bridges"]
-    B --> C["OPNsense VM"]
-    C --> D["OPNsense DHCP, DNS, routing, and NAT"]
-    D --> E["Ubuntu Server"]
-    D -. "after deployment" .-> F["Planned lab workloads"]
-```
+The [roadmap](../ROADMAP.md) keeps the detailed acceptance criteria. The order currently recorded there is:
 
-| Order | Component | Dependency reason |
-|---:|---|---|
-| 1 | Physical host and upstream network | Supplies compute, storage, and the external network path |
-| 2 | Proxmox and virtual bridges | Creates the virtual hardware and switching fabric |
-| 3 | OPNsense | Provides the lab gateway and supporting network services |
-| 4 | Lab endpoints and servers | Depend on OPNsense for dynamic addressing and routed connectivity unless deliberately configured otherwise |
+| Lab | Planned purpose | Starting allocation, where defined |
+|---|---|---|
+| LAB-04: Windows 11 | Endpoint administration and security | 4 vCPU, 8 GB RAM, 80 GB disk |
+| LAB-05: Windows Server / Active Directory | Accounts, permissions, DNS, and Group Policy | 4 vCPU, 6 GB RAM, 60 GB disk |
+| LAB-06: Wazuh | Collect logs and investigate selected events | 4 vCPU, 8 GB RAM, 50 GB disk |
+| LAB-07: Secure Clinical Laboratory | Connect the earlier work to fictional laboratory workflows | Application and additional resources still to be selected |
+| LAB-08: Kali | Test selected controls on authorized lab systems | 2 vCPU, 4 GB RAM, 40 GB disk |
+| LAB-09: Vulnerable targets | Assessment, remediation, and retesting | Depends on the selected target |
 
-OPNsense should start before dependent lab workloads. Automatic startup order and shutdown behavior will be formally documented and tested in a later resilience phase.
+The healthcare project is where I want to connect my laboratory background with the IT skills I am learning. It will use synthetic orders, specimens, and results. Its workflow, access roles, and risks can be planned now; the application, monitoring, and recovery tests remain future work. This project does not establish experience administering Epic Beaker or a production LIS.
 
-## 12. Resource-Management Strategy
+I have 32 GB of host memory, so I plan to run the VMs needed for each exercise and shut down the others. For example, the planned OPNsense, Windows Server, and Windows 11 allocations total about 18 GB of guest RAM, before Proxmox overhead. Actual usage will determine which combinations work comfortably.
 
-The 32 GB host is sufficient for the planned projects, but it is not intended to run every VM at once. Proxmox also requires memory for the hypervisor, storage services, and host processes.
+OPNsense needs to start before guests that depend on its network services. Earlier setup notes record start-at-boot order 1 and a 30-second delay for OPNsense. The published hardware screenshot does not establish those options, and a full host-restart test is still pending.
 
-Recommended operating groups include:
+## Decisions I want to remember
 
-| Exercise profile | Typical active guests | Approximate planned guest RAM |
-|---|---|---:|
-| Linux baseline | OPNsense and Ubuntu | Depends on the documented Ubuntu allocation |
-| Windows identity | OPNsense, Windows Server, and Windows 11 | 18 GB |
-| Authorized assessment | OPNsense, Kali, and one disposable target | Approximately 10–14 GB |
-| Monitoring exercise | OPNsense, Wazuh, and one selected endpoint | Approximately 16–20 GB |
+| ID | Choice | Why it matters to me |
+|---|---|---|
+| `ARCH-01` | Run Proxmox on dedicated hardware | Keep the lab separate from everyday workstation use |
+| `ARCH-02` | Give `vmbr1` no physical uplink | Build an internal virtual network with the hardware I have |
+| `ARCH-03` | Connect OPNsense to both bridges | Provide a place to route and filter traffic between the networks |
+| `ARCH-04` | Keep normal Proxmox management on `vmbr0` | Retain an administration path when a lab VM or OPNsense has a problem |
+| `ARCH-05` | Use a full VM for OPNsense | Support its FreeBSD kernel and infrastructure role |
+| `ARCH-06` | Use a full VM for the first Ubuntu server | Learn full-system administration |
+| `ARCH-07` | Use VirtIO virtual devices | Use devices designed for virtual machines |
+| `ARCH-08` | Run selected groups of VMs | Work within the host's memory and storage limits |
+| `ARCH-09` | Consider unprivileged LXC for benign support services | Explore lower resource use later; no containers are claimed as deployed |
+| `ARCH-10` | Put future vulnerable applications inside disposable VMs | Keep a VM boundary between those applications and the host |
 
-The healthcare capstone will use phased test sessions rather than assume that OPNsense, both Windows VMs, Wazuh, the simulated LIS, and Kali can run together. Actual resource use must be measured before choosing each session's guests; Kali is not required for the initial healthcare workflow, access-control, or downtime exercises.
+## What the architecture evidence supports
 
-The following resource practices apply:
+| Check | Recorded result |
+|---|---|
+| `ARC-VAL-01`: Proxmox starts and is manageable | Supported by LAB-01's published foundation record |
+| `ARC-VAL-02`: `vmbr0` has the physical uplink | Shown in the bridge screenshot |
+| `ARC-VAL-03`: `vmbr1` has no physical uplink | Shown in the bridge screenshot; temporary host addressing is a separate issue |
+| `ARC-VAL-04`: OPNsense WAN/LAN mapping is correct | Supported by VM hardware and guest interface evidence |
+| `ARC-VAL-05`: Ubuntu uses the OPNsense IPv4 path | Supported by DHCP and egress evidence |
+| `ARC-VAL-06`: The controlled blocked flow reaches OPNsense | Supported by the timestamped SSH timeout and matching firewall log |
+| `ARC-VAL-07`: IPv6 cannot bypass the intended boundary | Not yet tested |
+| `ARC-VAL-08`: Startup order works after a host restart | Not yet demonstrated |
+| `ARC-VAL-09`: Ubuntu returns to a clean snapshot state | Not yet tested |
+| `ARC-VAL-10`: An independent backup can be restored | Planned |
 
-- Start only the guests required for the current exercise.
-- Shut down unused desktop and monitoring VMs rather than allowing unnecessary idle consumption.
-- Leave a safety margin for Proxmox and unexpected guest demand.
-- Use fixed memory for foundational infrastructure when predictable behavior matters.
-- Consider unprivileged LXC only for lightweight benign support services.
-- Review disk growth because thin-provisioned capacity can be overcommitted.
-- Reevaluate allocations after monitoring actual CPU, memory, and storage usage.
+My main limits are the single host, shared upstream/management bridge, one lab subnet, and local storage. OPNsense cannot protect the guests from a compromised hypervisor, and it does not inspect ordinary traffic between guests on the same subnet. Centralized monitoring and independent recovery are still planned.
 
-## 13. Architectural Decisions
-
-| Decision ID | Decision | Reasoning | Status |
-|---|---|---|---|
-| `ARCH-01` | Use Proxmox VE as the bare-metal hypervisor | Supports VMs, LXCs, snapshots, virtual bridges, and centralized administration on reused hardware | **Implemented** |
-| `ARCH-02` | Create `vmbr1` without a physical uplink | Provides an internal virtual switch without purchasing a separate physical switch | **Implemented** |
-| `ARCH-03` | Place OPNsense between `vmbr0` and `vmbr1` | Creates a controlled routing and firewall point for lab traffic | **Implemented** |
-| `ARCH-04` | Keep Proxmox management on the trusted upstream path | Prevents routine management from depending on the isolated lab network | **Implemented** |
-| `ARCH-05` | Use a full VM for OPNsense | OPNsense requires its own FreeBSD kernel and stronger separation as infrastructure | **Implemented** |
-| `ARCH-06` | Use a full VM for the first Ubuntu baseline | Preserves full-system administration, kernel, boot, storage, firewall, and snapshot experience | **Implemented** |
-| `ARCH-07` | Use VirtIO devices for OPNsense | Reduces virtualization overhead while retaining supported virtual hardware | **Implemented** |
-| `ARCH-08` | Operate task-specific VM groups | Fits useful exercises within 32 GB of host memory | **In use** |
-| `ARCH-09` | Reserve LXC for benign supporting services | Improves density without replacing systems that require full VM isolation | **Planned / optional** |
-| `ARCH-10` | Place vulnerable application containers inside a VM | Adds a VM boundary between vulnerable applications and the Proxmox host kernel | **Planned** |
-
-## 14. Architecture Validation
-
-| Validation ID | Architectural assertion | Method | Current result |
-|---|---|---|---|
-| `ARC-VAL-01` | Proxmox runs on the dedicated host and is manageable through the upstream network | Host access and configuration review | **Pass** |
-| `ARC-VAL-02` | `vmbr0` is connected to the physical Ethernet interface | Proxmox network-configuration review and upstream connectivity | **Pass** |
-| `ARC-VAL-03` | `vmbr1` has no physical interface | Proxmox network-configuration review | **Pass** |
-| `ARC-VAL-04` | OPNsense WAN maps to `vmbr0` and LAN maps to `vmbr1` | VM hardware, interface, addressing, and traffic review | **Pass** |
-| `ARC-VAL-05` | Ubuntu uses the isolated network and OPNsense as its IPv4 gateway | Guest addressing, route, DHCP, DNS, and connectivity tests | **Pass** |
-| `ARC-VAL-06` | A blocked IPv4 test follows the intended OPNsense path | Controlled SSH test and firewall-log correlation | **Pass** |
-| `ARC-VAL-07` | IPv6 follows an equivalent isolated path or is consistently disabled | Address, route, connectivity, and firewall testing | **Not yet performed** |
-| `ARC-VAL-08` | OPNsense starts before dependent guests after a host restart | Controlled reboot and startup-order review | **Not yet documented** |
-| `ARC-VAL-09` | A clean Ubuntu state can be restored | Snapshot, controlled change, rollback, and functional retest | **Not yet performed** |
-| `ARC-VAL-10` | An independent VM backup can be restored | Backup, isolated restore, and service validation | **Planned** |
-
-## 15. Known Limitations and Planned Evolution
-
-### Single host
-
-The architecture has no high availability. A failure of the OptiPlex, Proxmox installation, or primary storage can stop every lab service.
-
-### Single physical network interface
-
-Proxmox management and the OPNsense WAN share `vmbr0`. The lab is logically segmented, but management and upstream roles are not separated by dedicated physical interfaces or VLANs.
-
-### One current lab subnet
-
-All current lab endpoints share `vmbr1` and the same IPv4 subnet. OPNsense does not ordinarily inspect traffic exchanged directly between hosts on that subnet. Future projects may add VLANs or additional internal interfaces when separate user, server, monitoring, and vulnerable-target zones become useful.
-
-### Resource ceiling
-
-The 32 GB memory limit requires workload scheduling. Windows, Wazuh, and multiple desktop VMs cannot all be assumed to run concurrently with adequate host headroom.
-
-### Local storage dependency
-
-Current VM disks and snapshots depend on the local Proxmox host. A separate backup destination and a tested restore workflow remain future architecture requirements.
-
-### Monitoring dependency
-
-OPNsense and individual guest logs currently provide local evidence. Centralized monitoring and cross-system correlation will be added after Wazuh is deployed.
-
-### Planned evolution
-
-The next architecture changes are expected to be:
-
-1. Complete the Ubuntu baseline, snapshot, and rollback exercise, and publish the remaining foundation evidence.
-2. Finish comprehensive management-network and IPv6 isolation validation before authorized attack or vulnerability testing.
-3. Add Windows 11 (`LAB-04`) and Windows Server / Active Directory (`LAB-05`) for endpoint and identity projects.
-4. Add Wazuh and selected log sources (`LAB-06`) before introducing Kali.
-5. Integrate the earlier components into a synthetic-data clinical laboratory scenario (`LAB-07`), including role-based access, selected traffic controls, monitoring, an independent backup/restore test, and downtime reconciliation.
-6. Add Kali for authorized control validation (`LAB-08`) after the required security gates are complete.
-7. Add disposable vulnerable systems and web applications for assessment, remediation, and retesting (`LAB-09`).
-
-The healthcare charter, workflow, proposed architecture, roles, and risk register may be drafted now without changing the deployed topology. Proposed subnets, VLANs, application services, and vendor-access paths must remain labeled as planned until implemented and tested.
-
-The detailed implementation sequence is maintained in [ROADMAP.md](../ROADMAP.md).
-
-## 16. Public Documentation Standard
-
-Public architecture evidence may include:
-
-- Sanitized Proxmox storage and network summaries
-- VM hardware views with MAC addresses and unrelated identifiers removed
-- Mermaid diagrams maintained as Markdown source
-- Tables of guest roles and planned resource allocations
-- Selected addressing information for the isolated private lab subnet
-- Validation summaries tied to project evidence
-
-Public documentation must exclude credentials, tokens, private keys, public IP addresses, MAC addresses, serial numbers, raw configuration backups, and unrelated information about household devices. Healthcare scenarios must use synthetic data, not patient information or internal employer configurations.
-
-## 17. Current Portfolio Description
-
-The following statement accurately represents the current architecture:
-
-> Built a dedicated Proxmox VE virtualization host with separate upstream and internal-only virtual bridges. Deployed a two-interface OPNsense VM as the routed IPv4 path to an isolated Ubuntu Server network, using VirtIO devices, DHCP, DNS forwarding, NAT, firewall policy, and logged validation. The environment is designed for staged expansion into Windows identity, centralized monitoring, a simulated clinical laboratory capstone with recovery validation, and later authorized assessment projects within a 32 GB resource limit.
-
-## 18. Change Log
+## Change log
 
 | Date | Change |
 |---|---|
-| 2026-09-05 | Aligned planned evolution with Windows endpoint → Active Directory → Wazuh → healthcare integration and recovery → Kali → vulnerable targets; preserved current topology and validation statuses. |
-| 2026-09-03 | Aligned every topology view with the verified `net1`/`vtnet1` WAN and `net0`/`vtnet0` LAN mapping; clarified current, planned, and console-management paths. |
-| 2026-09-02 | Replaced the incomplete initial draft with a structured living architecture document aligned with the current lab state and security-boundary format. |
+| 2026-09-25 | Rewrote the architecture as first-project learning notes; aligned Ubuntu progress, documented the temporary management path, and separated recorded settings from completed tests. |
+| 2026-09-05 | Updated the planned sequence to put Windows, identity, and Wazuh before the healthcare capstone and authorized assessment labs. |
+| 2026-09-03 | Corrected WAN/LAN adapter mapping and distinguished console administration from network traffic. |
+| 2026-09-02 | Created the architecture record. |

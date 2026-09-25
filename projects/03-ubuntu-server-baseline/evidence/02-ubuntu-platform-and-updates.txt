@@ -1,0 +1,14 @@
+2026-09-08T02:25:37Z
+Package metadata refresh: successful
+OS: Ubuntu 26.04.1 LTS
+Kernel: 7.0.0-31-generic
+Architecture: amd64
+Timezone=Etc/UTC
+NTPSynchronized=yes
+Pending upgrades: 2
+Reboot required: no
+
+Phased-update review: 2026-09-08T02:39:23Z
+The following upgrades have been deferred due to phasing:
+  libaudit-common libaudit1
+0 upgraded, 0 newly installed, 0 to remove and 2 not upgraded.

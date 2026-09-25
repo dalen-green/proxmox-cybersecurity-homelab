@@ -1,0 +1,11 @@
+2026-09-08T02:59:47Z
+Interactive local accounts:
+admin_username uid=1000 shell=/bin/bash
+standard_username uid=1001 shell=/bin/bash
+
+Account identities and group memberships:
+uid=1000(admin_username) gid=1000(admin_username) groups=1000(admin_username),4(adm),24(cdrom),27(sudo),30(dip),46(plugdev),100(users),101(lxd)
+uid=1001(standard_username) gid=1001(standard_username) groups=1001(standard_username),100(users)
+
+Sudo group membership:
+sudo:x:27:admin_username

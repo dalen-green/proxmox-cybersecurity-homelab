@@ -1,212 +1,123 @@
 # Project 02: OPNsense Network Segmentation
 
-> **Technical status:** Verified for IPv4  
-> **Last updated:** 2026-09-07  
-> **Platform:** Two-interface OPNsense VM on Proxmox VE  
-> **Portfolio status:** Published
+> **Technical status:** Verified for the recorded IPv4 setup and SSH test\
+> **Portfolio status:** Published\
+> **Platform:** OPNsense VM on Proxmox VE\
+> **Last updated:** 2026-09-25
 
-## 1. Objective
+## What I wanted to learn
 
-Create a controlled IPv4 path between the upstream private network and an internal-only cybersecurity lab network.
+After creating the virtual bridges in Proxmox, I needed to understand how a lab VM could reach the internet while keeping its connections under a firewall's control. This was my first time building that kind of network.
 
-OPNsense provides routing, DHCP, DNS forwarding, NAT, firewall policy, and logging for lab endpoints attached to the isolated Proxmox bridge.
+I used OPNsense as the lab's router and firewall. A router moves traffic between networks; a firewall decides which traffic is allowed. OPNsense also supplies the lab's DHCP and DNS services. Ubuntu was the endpoint I used to check the setup.
 
-## 2. Scope
+The result is a working IPv4 path and one recorded blocked SSH connection. Broader home-network, management-access, and IPv6 testing remains unfinished.
 
-This project includes:
-
-- Deploying OPNsense as a two-interface virtual machine
-- Connecting the WAN side to Proxmox bridge `vmbr0`
-- Connecting the LAN side to internal-only bridge `vmbr1`
-- Configuring the lab subnet, DHCP, DNS forwarding, and outbound NAT
-- Creating a logged IPv4 block for the protected upstream destination above the broader LAN allow rule
-- Testing that rule with a controlled SSH connection from the Ubuntu lab endpoint
-- Correlating the denied endpoint result with the OPNsense firewall log
-
-This project does not claim comprehensive isolation of every protocol, management service, or IPv6 path. Those tests remain required before intentionally vulnerable systems are introduced.
-
-## 3. Architecture
+## How I connected it
 
 ```mermaid
 flowchart TD
-    U["Upstream private network"] --- B0["vmbr0 — upstream bridge"]
-    B0 --- P["Proxmox management plane"]
-    B0 --- W["OPNsense net1 / vtnet1 — WAN (DHCP)"]
-    W --- F["OPNsense routing, NAT, and firewall"]
-    F --- L["OPNsense net0 / vtnet0 — LAN (10.10.10.1/24)"]
-    L --- B1["vmbr1 — internal only"]
-    B1 --- V["Ubuntu Server — DHCP client"]
+    R["Home network and router"] --- B0["vmbr0: upstream bridge"]
+    B0 --- P["Proxmox management"]
+    B0 --- W["OPNsense WAN: net1 / vtnet1"]
+    W --- F["OPNsense routing and firewall"]
+    F --- L["OPNsense LAN: net0 / vtnet0"]
+    L --- B1["vmbr1: internal lab bridge"]
+    B1 --- U["Ubuntu: lab DHCP client"]
 ```
 
-- `vmbr0` connects the physical network, Proxmox management plane, and OPNsense WAN.
-- `vmbr1` has no physical uplink or Proxmox host address.
-- OPNsense is the only intended Layer 3 path between `vmbr1` and upstream networks.
-- A lab guest must not receive an additional adapter on `vmbr0`, because that would bypass the firewall path.
+WAN faces the existing home network through `vmbr0`. LAN faces the lab through `vmbr1`. The WAN address is private because OPNsense sits behind my home router.
 
-The complete current topology is documented in [`architecture.md`](../../docs/architecture.md).
+The adapter numbering took some attention: Proxmox `net1` appears as OPNsense `vtnet1` and is WAN; `net0` appears as `vtnet0` and is LAN. I checked the mapping in both systems. The [hardware](evidence/01-proxmox-opnsense-nics.png) and [interface](evidence/02-opnsense-interface-overview.png) screenshots preserve that relationship.
 
-## 4. Implemented Configuration
+`vmbr1` has no physical uplink. Its documented design has no permanent Proxmox IPv4 address, although I used a temporary host address for LAN-side administration. The [architecture notes](../../docs/architecture.md) explain that exception.
 
-### OPNsense virtual machine
+## The configuration I recorded
 
-| Component | Configuration |
+| Setting | Recorded value |
 |---|---|
-| VM ID | `100` |
-| OPNsense release | 26.7 (amd64) |
-| Processor | 2 virtual CPUs |
-| Memory | 4096 MiB with ballooning disabled |
-| Virtual disk | 32 GiB on `local-lvm` |
-| Firmware and machine | OVMF/UEFI with Q35 |
-| Disk controller | VirtIO SCSI |
-| LAN adapter | Proxmox `net0` on `vmbr1`; OPNsense `vtnet0` |
-| WAN adapter | Proxmox `net1` on `vmbr0`; OPNsense `vtnet1` |
-| Startup | Start at boot, order 1, with a 30-second delay |
+| VM and guest | Proxmox VM `100`, OPNsense 26.7 amd64 |
+| CPU and RAM | 2 virtual cores, 4096 MiB RAM, ballooning disabled |
+| Main disk | 32 GiB on `local-lvm` |
+| Virtual hardware | OVMF UEFI, Q35, VirtIO SCSI |
+| WAN | `net1` on `vmbr0`; guest `vtnet1`; upstream DHCP |
+| LAN | `net0` on `vmbr1`; guest `vtnet0`; `10.10.10.1/24` |
+| Lab DHCP | Dnsmasq scope recorded as `10.10.10.100`–`10.10.10.200` |
+| Lab DNS and outbound IPv4 | DNS service for clients and outbound NAT through WAN |
+| Administration | Proxmox console or deliberate LAN-side access |
 
-The adapter roles were verified from both sides of the virtualization boundary rather than inferred from interface numbering.
+The hardware and guest-interface screenshots support the VM resources and adapter mapping. The DHCP lease and Ubuntu output show the client using the lab network and reaching an HTTPS site. Some setup details, including the full DHCP scope, remain configuration notes rather than separately captured settings.
 
-### IPv4 services
+Earlier notes record start-at-boot order 1 with a 30-second delay. The published hardware view does not show those options, and I have not documented a full host-restart test.
 
-| Service | Implemented state |
+Because WAN connects to a private home network, the setup notes record disabling WAN's **Block private networks** option. This is separate from allowing arbitrary incoming connections. The documented setup retains WAN deny behavior and uses no home-router port forwarding, but independent external testing is still pending.
+
+## The firewall rule I tested
+
+| Field | Configured value |
 |---|---|
-| LAN gateway | `10.10.10.1/24` |
-| DHCP | Dnsmasq DHCP with lab-only scope `10.10.10.100`–`10.10.10.200` |
-| DNS | Forwarding available to LAN clients |
-| NAT | Outbound IPv4 translation through the OPNsense WAN |
-| WAN addressing | DHCP from the upstream private network; exact lease omitted |
-| Web administration | LAN-side access only; not exposed on WAN |
-
-Because the OPNsense WAN is behind a private home router, WAN **Block private networks** is disabled for this deployment. The default WAN deny behavior remains in place, and no home-router port forwarding exposes the firewall or lab systems to the internet.
-
-## 5. Firewall Policy Tested
-
-The configured rule uses:
-
-| Field | Value |
-|---|---|
-| Interface | LAN |
-| Address family | IPv4 |
-| Protocol | Any IPv4 protocol |
+| Interface and address family | LAN, IPv4 |
 | Source | LAN network |
-| Source port | Any |
-| Destination | Protected upstream destination |
-| Destination port | Any |
+| Protocol and ports | Any |
+| Destination | Selected protected upstream destination |
 | Action | Block and log |
-| Order | Above the general IPv4 LAN allow rule |
+| Position | Above the broad IPv4 LAN allow rule |
 
-The rule is broader than the single validation flow: it is configured to block IPv4 traffic to the protected destination, while the observed test used SSH on TCP destination port 22. That test confirms one representative flow matched the rule; it does not prove that every protocol and management path has been exercised.
+I used an SSH attempt from Ubuntu to the authorized protected test endpoint. SSH uses TCP destination port 22. The rule's configured scope covers more traffic than that single test, so I keep the configuration and tested result separate.
 
-This policy was tested only against an endpoint owned or explicitly authorized for the lab exercise.
+For the quick interface rules used here, an earlier matching rule takes effect. Placing the specific block above the broad allow rule gives the block a chance to match the new connection. Other OPNsense rule categories and connection states also matter; the [official documentation](https://docs.opnsense.org/manual/firewall.html#processing-order) explains that processing model.
 
-## 6. Validation
+The broad IPv4 allow rule remains in the saved configuration. The lab is not enforcing a narrow website or update-repository allowlist. The screenshot also contains a separate IPv6 allow rule, which is one reason IPv6 review remains open.
 
-| Test ID | Test | Expected result | Result |
-|---|---|---|---|
-| `VAL-01` | Request IPv4 configuration from Ubuntu on `vmbr1` | OPNsense supplies a lab address, gateway, and DNS | **Pass** |
-| `VAL-02` | Resolve a public hostname and request an approved HTTPS resource | DNS and outbound traffic pass through OPNsense | **Pass** |
-| `VAL-03` | Initiate the controlled upstream SSH connection | The protected-destination rule denies the tested TCP destination port 22 connection | **Pass** |
-| `VAL-04` | Filter OPNsense logs for the test connection | A matching blocked connection is visible | **Pass** |
-| `VAL-05` | Test multiple protocols against a protected upstream test host | Unauthorized traffic is denied and logged | **Not yet performed** |
-| `VAL-06` | Test Proxmox and OPNsense management reachability from Ubuntu | Unauthorized management access is denied and logged | **Not yet performed** |
-| `VAL-07` | Inspect and test IPv6 addressing and routes | No IPv6 path bypasses the boundary | **Not yet performed** |
+## How I checked the result
 
-The successful SSH test proves the tested IPv4 rule, protocol, direction, and destination port. It does not prove that every other upstream or management path is blocked.
+| Check | Recorded result |
+|---|---|
+| `VAL-01`: Ubuntu gets lab networking | DHCP lease and guest output show an address on the lab subnet, with gateway and DNS at `10.10.10.1` |
+| `VAL-02`: Hostname-based HTTPS request works | Ubuntu recorded HTTP status `200` from `example.com`, supporting the tested DNS and outbound connection |
+| `VAL-03`: Protected-destination SSH attempt is denied | Ubuntu recorded a timeout on TCP/22 |
+| `VAL-04`: Firewall records the test | OPNsense logged matching LAN TCP/22 blocks under the intended rule label |
+| `VAL-05`: Additional protocols and destinations | Not yet performed |
+| `VAL-06`: Unauthorized Proxmox/OPNsense management access | Not yet comprehensively tested |
+| `VAL-07`: IPv6 boundary | Not yet tested |
 
-## 7. Evidence
+The SSH attempt was recorded at `2026-09-07T02:55:56Z`; the associated block sequence began at `02:55:57`. The connection fields and close timestamps tie the timeout to the firewall action. A timeout alone would not have established the cause.
 
-The draft evidence index, required captures, captions, and sanitization record are maintained in [`evidence/README.md`](evidence/README.md).
+All seven published artifacts and their explanations are in the [evidence index](evidence/README.md): adapter mapping, guest interfaces, DHCP lease, allowed egress, rule order, SSH timeout, and the firewall log.
 
-The publication set is designed around seven artifacts:
+## Problems I worked through
 
-| Evidence ID | Required artifact | Collection status |
-|---|---|---|
-| `OPN-E01` | Proxmox OPNsense adapter assignments | **Reviewed** |
-| `OPN-E02` | OPNsense WAN/LAN interface overview | **Reviewed** |
-| `OPN-E03` | OPNsense DHCP lease for the Ubuntu endpoint | **Reviewed** |
-| `OPN-E04` | Sanitized Ubuntu IPv4, DNS, and approved HTTPS output | **Reviewed** |
-| `OPN-E05` | OPNsense LAN firewall rule order | **Reviewed** |
-| `OPN-E06` | Timestamped denied SSH test from Ubuntu | **Reviewed** |
-| `OPN-E07` | Matching OPNsense firewall block log | **Reviewed** |
+### Reaching the LAN web interface from my workstation
 
-All seven publication artifacts are present, sanitized, reviewed, and included with this project write-up.
+My workstation was on the home network, while the OPNsense web interface was on the lab side. I used an SSH tunnel through Proxmox and a temporary `10.10.10.2/24` address on `vmbr1`.
 
-## 8. Problems Encountered
+The LAB-02 record includes closing the tunnel and removing that address after use. Later Ubuntu work used the path again, so I should confirm cleanup after each session. A previous cleanup does not establish the current runtime state.
 
-### Initial LAN-side administration required a temporary path
+### Tracking a changed WAN address
 
-**Observed issue:** The OPNsense web interface was initially reachable only from its LAN side, while the trusted workstation was upstream.
+The home router issued a different DHCP lease to OPNsense. Checking the console helped me separate a changed address from a changed interface role. I now describe WAN by its bridge and adapter mapping and check its current lease when needed.
 
-**Resolution:** Used a temporary Proxmox LAN-side address and SSH tunnel for bootstrap administration, then removed both after normal access was established.
+### Getting useful firewall evidence
 
-**Lesson:** Temporary management paths should be narrowly scoped, documented, and removed after use.
+Live View initially showed no entries for the Ubuntu source filter. I checked the source address, logging, rule order, and whether changes had been applied, then generated a fresh SSH attempt. Matching blocks appeared.
 
-### WAN DHCP addressing changed
+This taught me to check several possible causes before deciding what failed. The successful retest establishes the resulting behavior; it does not isolate one earlier setting as the sole cause of the empty log.
 
-**Observed issue:** The upstream router later issued a different private WAN address.
+## What I learned about the boundary
 
-**Resolution:** Confirmed the current lease and documented the interface by role and bridge mapping rather than relying on one dynamic address.
+I can now follow a connection from Ubuntu, through `vmbr1`, into OPNsense LAN, and toward WAN on `vmbr0`. I also learned that two guests on the same lab subnet normally communicate directly through `vmbr1`. Their traffic does not need to pass through OPNsense, so Ubuntu's host firewall has a separate job.
 
-**Lesson:** Interface identity and topology are more durable evidence than a DHCP lease value.
+The skills I practiced were VM deployment, adapter mapping, IPv4 addressing, DHCP/DNS, NAT, rule ordering, controlled connection tests, and matching a client result to a firewall log. I am still building confidence with these concepts, which is why I keep the test scope visible.
 
-### The first firewall rule did not take effect in its original position
+## What remains
 
-**Observed issue:** The broader LAN allow rule matched traffic before the protected-destination block.
+I still need to verify the full protected-network policy, test unauthorized access to Proxmox and OPNsense management services, and resolve IPv6 behavior. Management and upstream traffic also share the same physical interface, and both the firewall and its guests depend on one host.
 
-**Resolution:** Moved the logged protected-destination block above the broader allow rule, applied the pending ruleset, generated a fresh SSH test, and located the matching firewall-log entries.
+The required checks before deliberately vulnerable targets are recorded in the [security boundaries](../../docs/security-boundaries.md). The broader [lessons learned](../../docs/lessons-learned.md) explain the troubleshooting in more detail. My next ongoing project is the [Ubuntu baseline](../03-ubuntu-server-baseline/), with future work in the [roadmap](../../ROADMAP.md).
 
-**Lesson:** A rule is not verified merely because it exists in the configuration view. Its changes must be applied, and rule order, traffic matching, endpoint behavior, and logs must agree.
-
-## 9. Security Reasoning
-
-- Lab endpoints use `vmbr1` and do not receive a direct adapter on `vmbr0`.
-- OPNsense provides the routed control point for north-south lab traffic.
-- Documentation limits the validated claim to the observed SSH flow even though the configured IPv4 rule is broader.
-- Logged deny rules support correlation between endpoint behavior and firewall enforcement.
-- No management or lab service is exposed through home-router port forwarding.
-- Exact upstream addressing and hardware identifiers are excluded from public evidence.
-
-Detailed controls and residual risk are documented in [`security-boundaries.md`](../../docs/security-boundaries.md).
-
-## 10. Skills Demonstrated
-
-- Proxmox virtual-network design
-- Firewall VM deployment
-- Virtual-to-guest interface mapping
-- IPv4 subnetting and DHCP
-- DNS forwarding and outbound NAT
-- Stateful firewall rule design
-- First-match rule-order analysis
-- Controlled allow-and-deny testing
-- Firewall-log correlation
-- Evidence sanitization and scope-aware reporting
-
-## 11. Limitations and Remaining Work
-
-- The validated restriction covers one controlled IPv4 SSH path, not every protocol or destination.
-- Comprehensive lab-to-protected-network blocking is not yet tested.
-- Proxmox and OPNsense management-plane denial from `vmbr1` is not yet tested.
-- IPv6 has not yet been validated or deliberately disabled across the path.
-- OPNsense and Proxmox management/upstream traffic share `vmbr0` in the single-NIC design.
-- OPNsense does not ordinarily inspect traffic exchanged directly between guests on the same `vmbr1` subnet.
-- Formal external validation of unsolicited inbound denial has not been documented.
-- Intentionally vulnerable systems should not be introduced until the protected-network, management-plane, and IPv6 controls are completed.
-
-## 12. Outcome
-
-The lab has an operational IPv4 network boundary in which OPNsense routes traffic between the upstream and internal-only Proxmox bridges. An Ubuntu endpoint received lab networking, used approved DNS and outbound HTTPS, and generated a controlled SSH connection that was denied by the intended rule and correlated with the OPNsense firewall log.
-
-Comprehensive management-network and IPv6 isolation testing remains in progress.
-
-## 13. Related Documentation
-
-- [Evidence pack](evidence/README.md)
-- [Lab architecture](../../docs/architecture.md)
-- [Security boundaries](../../docs/security-boundaries.md)
-- [Lessons learned](../../docs/lessons-learned.md)
-- [Project roadmap](../../ROADMAP.md)
-
-## 14. Change Log
+## Change log
 
 | Date | Change |
 |---|---|
-| 2026-09-07 | Published the sanitized seven-artifact evidence pack and aligned the documented claims with the observed IPv4 SSH validation. |
-| 2026-09-07 | Created the LAB-02 project draft and defined the minimum publication evidence set. |
+| 2026-09-25 | Rewrote the project as a learning narrative; clarified configuration versus test evidence, temporary access, and the limits of the current policy. |
+| 2026-09-07 | Created the write-up and published the seven-artifact evidence pack for the recorded IPv4 setup and SSH test. |

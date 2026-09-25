@@ -1,0 +1,38 @@
+2026-09-09T03:51:03Z
+SSH configuration syntax: valid
+
+SSH service and socket activation:
+ssh.service enabled: disabled
+ssh.service active: active
+ssh.socket enabled: enabled
+ssh.socket active: active
+LISTEN     UNIT       ACTIVATES
+0.0.0.0:22 ssh.socket ssh.service
+[::]:22    ssh.socket ssh.service
+
+2 sockets listed.
+Pass --all to see loaded but inactive sockets, too.
+
+Selected effective SSH settings:
+port 22
+addressfamily any
+listenaddress [::]:22
+listenaddress 0.0.0.0:22
+maxauthtries 3
+permitrootlogin no
+pubkeyauthentication yes
+passwordauthentication no
+kbdinteractiveauthentication no
+x11forwarding no
+permitemptypasswords no
+allowtcpforwarding no
+allowagentforwarding no
+disableforwarding yes
+allowstreamlocalforwarding no
+allowusers admin_username
+authenticationmethods publickey
+
+SSH listening sockets:
+State  Recv-Q Send-Q Local Address:Port Peer Address:PortProcess                                                 
+LISTEN 0      4096         0.0.0.0:22        0.0.0.0:*    users:(("sshd",pid=1307,fd=3),("systemd",pid=1,fd=100))
+LISTEN 0      4096            [::]:22           [::]:*    users:(("sshd",pid=1307,fd=4),("systemd",pid=1,fd=101))

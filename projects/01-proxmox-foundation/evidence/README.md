@@ -1,14 +1,15 @@
 # LAB-01 Evidence Pack
 
-> **Technical status:** Verified  
-> **Portfolio status:** Published  
-> **Platform captured:** Proxmox VE 9.2.11  
-> **Evidence captured:** 2026-09-02  
-> **Last reviewed:** 2026-09-03
+> **Technical status:** Verified\
+> **Portfolio status:** Published\
+> **Platform captured:** Proxmox VE 9.2.11\
+> **Evidence captured:** 2026-09-02\
+> **Last reviewed:** 2026-09-03\
+> **Documentation revised:** 2026-09-25
 
 ## 1. Purpose
 
-This evidence pack supports the claims in the [Proxmox Foundation project write-up](../README.md) with selected, sanitized artifacts. It is intentionally not a complete installation diary or a configuration backup.
+I kept these six artifacts so I can connect the [Proxmox project explanation](../README.md) to the settings I recorded. They show the foundation at capture time. The version output records installed packages; it is not a complete upgrade transcript or a current patch assessment.
 
 ## 2. Evidence Index
 
@@ -29,7 +30,7 @@ This evidence pack supports the claims in the [Proxmox Foundation project write-
 
 > **Proxmox Datacenter Summary showing one online standalone node, approximately 32 GB RAM, and two running virtual machines. The server address is redacted.**
 
-Related validation: `PVE-01`, `PVE-02`, `PVE-03`, `PVE-08`, `PVE-09`, `PVE-VAL-01`, and `PVE-VAL-02`.
+Related validation: `PVE-VAL-01` and `PVE-VAL-02`.
 
 ### `PVE-E02` — Repository configuration
 
@@ -37,7 +38,7 @@ Related validation: `PVE-01`, `PVE-02`, `PVE-03`, `PVE-08`, `PVE-09`, `PVE-VAL-0
 
 > **Repository configuration showing the enterprise sources disabled and the official no-subscription source enabled for this non-subscription lab host.**
 
-Related validation: `PVE-05`, `PVE-06`, and `PVE-VAL-03`.
+Related validation: `PVE-VAL-03`.
 
 ### `PVE-E03A` — Local content storage
 
@@ -45,7 +46,7 @@ Related validation: `PVE-05`, `PVE-06`, and `PVE-VAL-03`.
 
 > **The active `local` directory store is configured for backups, imports, ISO images, and container templates, separating installation content from guest-disk storage.**
 
-Related validation: `PVE-10` and `PVE-VAL-05`.
+Related validation: `PVE-VAL-05`.
 
 ### `PVE-E03B` — Thin-provisioned guest storage
 
@@ -53,7 +54,7 @@ Related validation: `PVE-10` and `PVE-VAL-05`.
 
 > **The active `local-lvm` LVM-thin pool provides approximately 373.55 GB for virtual-machine disk images and containers.**
 
-Related validation: `PVE-10` and `PVE-VAL-05`.
+Related validation: `PVE-VAL-05`.
 
 ### `PVE-E04` — Virtual bridges
 
@@ -61,7 +62,7 @@ Related validation: `PVE-10` and `PVE-VAL-05`.
 
 > **Bridge configuration showing `vmbr0` attached to the host’s physical interface and `vmbr1` active with autostart enabled and no physical bridge port. Network addressing and hardware identifiers are redacted.**
 
-Related validation: `NET-01`, `NET-02`, `NET-03`, `PVE-VAL-06`, and `PVE-VAL-07`.
+Related validation: `PVE-VAL-06` and `PVE-VAL-07`.
 
 ### `PVE-E05` — Installed versions
 
@@ -95,7 +96,7 @@ No password, token, private key, subscription credential, public IP address, ser
 
 These artifacts demonstrate the Proxmox foundation only. OPNsense interface mapping, firewall rules, denied-traffic logs, Ubuntu addressing, and broader lab-to-home isolation belong in later project evidence packs.
 
-An empty physical port on `vmbr1` proves that the bridge is internal to the Proxmox host. It does not, by itself, prove firewall enforcement, comprehensive management-plane isolation, or IPv6 isolation.
+The empty physical-port field on `vmbr1` shows that it has no physical uplink. It does not establish complete firewall or management isolation. The static bridge view also cannot prove that a temporary runtime host address is absent during later administration; that exception is explained in the [architecture](../../../docs/architecture.md).
 
 ## 6. Publication Verification
 

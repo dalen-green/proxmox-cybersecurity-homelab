@@ -1,281 +1,120 @@
 # Project 01: Proxmox Foundation
 
-> **Project status:** Verified  
-> **Last updated:** 2026-09-03  
-> **Platform:** Dell OptiPlex 7090 SFF running Proxmox VE  
-> **Portfolio status:** Published
+> **Project status:** Verified for the foundation scope below\
+> **Portfolio status:** Published\
+> **Platform:** Dell OptiPlex 7090 SFF running Proxmox VE\
+> **Last updated:** 2026-09-25
 
-## 1. Objective
+## What I wanted to learn
 
-Deploy a dedicated bare-metal virtualization platform capable of supporting a segmented cybersecurity laboratory.
+This was my starting point for building an IT lab. My background is in microbiology, and I had not built a virtualization environment before. I wanted a separate computer where I could install operating systems, make changes, and learn how to check the results.
 
-The project established the underlying compute, storage, management, and virtual-networking foundation required for later OPNsense, Linux, Windows, Active Directory, vulnerability-testing, monitoring, and recovery projects.
+I installed Proxmox directly on a Dell OptiPlex. Proxmox is a hypervisor: it manages the physical computer and lets me run virtual machines, each with its own operating system. This project established the host, storage, management access, and virtual networking used by the later labs.
 
-## 2. Scope
+## What I used
 
-This project includes:
-
-- Preparing Proxmox installation media
-- Installing Proxmox VE on dedicated hardware
-- Establishing trusted management access
-- Configuring appropriate software repositories
-- Installing available updates
-- Reviewing Proxmox storage roles
-- Confirming the upstream `vmbr0` bridge
-- Creating the internal-only `vmbr1` bridge
-- Validating the resulting host and virtual-network configuration
-
-This project does not include OPNsense firewall policy, Ubuntu hardening, Windows administration, or vulnerability testing. Those subjects are documented as separate projects.
-
-## 3. Environment
-
-### Physical platform
-
-| Component | Configuration |
+| Component | Recorded setup or purpose |
 |---|---|
-| Host | Dell OptiPlex 7090 SFF |
-| Processor | Intel Core i7 |
-| Memory | 32 GB RAM |
-| Storage | Local solid-state storage managed by Proxmox |
-| Networking | One active physical Ethernet connection |
-| Primary role | Dedicated cybersecurity virtualization host |
+| Computer | Dell OptiPlex 7090 SFF |
+| Processor and memory | Intel Core i7 and 32 GB RAM |
+| Storage | Local solid-state storage |
+| Network | One active physical Ethernet connection to the home network |
+| Installation tool | Rufus, used to create the bootable USB |
+| Administration | Proxmox web interface from my Windows workstation |
+| Proxmox node | `pve` |
 
-### Software and administration
+The [evidence pack](evidence/README.md) records the captured platform versions and configuration. Upstream addresses and unnecessary hardware identifiers are removed from the public copies.
 
-| Component | Purpose |
-|---|---|
-| Proxmox VE | Bare-metal hypervisor and management platform |
-| Rufus | Created the bootable installation USB |
-| Web browser | Accessed the Proxmox management interface |
-| Trusted Windows workstation | Performed routine remote administration |
-
-Exact IP addresses, MAC addresses, serial numbers, and storage-device identifiers are intentionally omitted from this public documentation.
-
-## 4. Foundation Architecture
+## How this foundation connects to the other labs
 
 ```mermaid
 flowchart TD
-    A["Trusted administrative workstation"] --- R["Upstream home network"]
-    subgraph H["Dell OptiPlex 7090 / Proxmox VE"]
-        N["Physical Ethernet interface"] --- B0["vmbr0 — upstream bridge"]
-        B0 --- M["Proxmox management plane"]
-        B0 --- W["OPNsense net1 / vtnet1 — WAN (LAB-02)"]
-        W --- F["OPNsense firewall and router (LAB-02)"]
-        F --- L["OPNsense net0 / vtnet0 — LAN (LAB-02)"]
-        L --- B1["vmbr1 — internal only; no host IP or physical uplink"]
-        B1 --- U["Ubuntu Server (LAB-03)"]
-    end
-    R --- N
+    A["Windows workstation"] --- R["Home network"]
+    R --- N["OptiPlex physical Ethernet"]
+    N --- B0["vmbr0: upstream bridge"]
+    B0 --- P["Proxmox management"]
+    B0 --- W["OPNsense WAN: net1 / vtnet1"]
+    W --- F["OPNsense firewall and router"]
+    F --- L["OPNsense LAN: net0 / vtnet0"]
+    L --- B1["vmbr1: no physical uplink"]
+    B1 --- U["Ubuntu VM"]
 ```
 
-This diagram shows how the LAB-01 bridge foundation is used in the current topology. OPNsense and Ubuntu are included to keep the interface mapping consistent across the repository; their implementation and validation belong to LAB-02 and LAB-03 rather than this project.
+I created the bridge foundation in this project. OPNsense and Ubuntu are shown to explain how LAB-02 and LAB-03 use it. The [architecture notes](../../docs/architecture.md) also describe the temporary LAN-side Proxmox address used for administration; this diagram shows the normal connections.
 
-- `vmbr0` connects the physical Ethernet interface, Proxmox management plane, and OPNsense `net1` / `vtnet1` WAN.
-- `vmbr1` exists only inside the Proxmox host, has no host IP or physical uplink, and connects OPNsense `net0` / `vtnet0` LAN to Ubuntu.
-- OPNsense now provides the controlled routed path between the two bridges.
-- A bridge provides virtual switching; it does not independently provide routing or firewall enforcement.
+A bridge works like a virtual Ethernet switch. `vmbr0` connects to the physical network and carries Proxmox management and OPNsense WAN. `vmbr1` has no physical uplink and connects the lab guests to OPNsense LAN. OPNsense provides routing and firewall rules between the two networks.
 
-The complete current topology is documented in [`architecture.md`](../../docs/architecture.md).
+## What I did and why
 
-## 5. Implementation Summary
+### Installed Proxmox on the dedicated computer
 
-### 5.1 Installation media
+I prepared the USB with Rufus, installed Proxmox on the OptiPlex, and opened its management interface from my workstation. Installing directly on the hardware gives Proxmox responsibility for the host's processor, memory, disks, and virtual devices.
 
-A bootable Proxmox installation USB was prepared with Rufus and used to install Proxmox directly on the dedicated OptiPlex.
+Using a dedicated machine keeps these experiments separate from my everyday workstation, although the lab still shares my home network through its upstream connection.
 
-Installing Proxmox as a bare-metal hypervisor allows it to manage the host’s processor, memory, storage, and network interfaces directly rather than running inside another operating system.
+### Corrected the update repositories
 
-### 5.2 Proxmox installation
+The enterprise repository produced subscription-related errors because this lab does not have a paid subscription. I disabled the enterprise source, enabled the official no-subscription source, refreshed package information, and installed the available updates.
 
-Proxmox VE was installed on the host’s local storage. The installation established:
+I learned that a repository is a source of software packages and updates. Removing an unusable source was only part of the fix; I also needed an appropriate source enabled so updates could continue.
 
-- The Proxmox operating system
-- The `pve` node
-- Local management credentials
-- An upstream management connection
-- Default local storage pools
-- The initial `vmbr0` bridge
+### Learned the storage roles
 
-The management interface was then accessed from a trusted workstation on the upstream private network.
-
-### 5.3 Repository configuration and updates
-
-The enterprise repository was disabled because the lab does not use a paid Proxmox subscription. The official no-subscription repository was enabled, and available operating-system and Proxmox updates were installed.
-
-This removed subscription-related repository errors while retaining access to the appropriate community update channel.
-
-### 5.4 Storage review
-
-The two primary Proxmox storage locations serve different purposes:
-
-| Storage | Primary purpose |
+| Storage | How I use it |
 |---|---|
-| `local` | ISO images, container templates, and selected backup files |
-| `local-lvm` | VM and LXC virtual disks |
+| `local` | ISO installation images and other supported files; the configured store also supports local backups |
+| `local-lvm` | Virtual disks for the guest operating systems |
 
-This distinction became important when uploading installation media and creating virtual disks. An ISO belongs on `local`, while a guest operating-system disk normally belongs on `local-lvm`.
+At first, these looked like two versions of the same storage menu. The supported content types explained why an installation ISO and a VM disk belonged in different places.
 
-`local-lvm` uses thin provisioning. A virtual disk’s maximum capacity is not necessarily consumed immediately; physical usage increases as the guest writes data.
+`local-lvm` uses thin provisioning, so a virtual disk's maximum size is not necessarily consumed immediately. I still need to monitor the actual storage remaining as guests write data.
 
-### 5.5 Upstream bridge
+### Checked vmbr0 and created vmbr1
 
-The existing `vmbr0` bridge was confirmed as the upstream bridge.
+I confirmed that `vmbr0` used the physical Ethernet interface, then created `vmbr1` without a physical bridge port or permanent Proxmox IPv4 address.
 
-It connects:
+This gave the lab an internal virtual switch. It did not by itself create a complete security policy. Later, OPNsense supplied the routed connection and rules. An incorrectly added `vmbr0` adapter on a lab guest could bypass that intended path, so adapter assignments are part of my checks.
 
-- The physical Ethernet interface
-- The Proxmox management plane
-- The OPNsense `net1` / `vtnet1` WAN interface, implemented in LAB-02
+## What I checked
 
-A system connected to `vmbr0` can potentially communicate with the upstream home network. Intentionally vulnerable lab systems must therefore not connect directly to this bridge.
+| Check | Recorded result and evidence limit |
+|---|---|
+| `PVE-VAL-01`: Host boots | The published node summary shows an online Proxmox host |
+| `PVE-VAL-02`: Workstation management access | The setup record and captured web interface show working access |
+| `PVE-VAL-03`: Repository setup | The repository screenshot shows enterprise sources disabled and no-subscription enabled; the setup notes record successful refresh |
+| `PVE-VAL-04`: Available updates installed | Completion is recorded in the setup notes; `pveversion -v` preserves the installed versions, not a full upgrade transcript |
+| `PVE-VAL-05`: Storage roles | The `local` and `local-lvm` screenshots show their types and supported content |
+| `PVE-VAL-06`: Upstream bridge | The network screenshot shows `vmbr0` attached to the physical interface |
+| `PVE-VAL-07`: Internal bridge | The same screenshot shows `vmbr1` active with no physical bridge port |
 
-### 5.6 Isolated bridge
+The foundation is marked verified within that scope. These captures describe the saved setup and do not establish current patch status or complete network isolation.
 
-A second Linux bridge named `vmbr1` was created with:
+The [evidence index](evidence/README.md) contains six artifacts: a node summary, repository configuration, two storage views, a bridge view, and the version output. LAB-02 and LAB-03 provide the later guest-network and host-security evidence.
 
-- No physical bridge port
-- No direct connection to the home router
-- No Proxmox management role
-- An active internal virtual-switch state
+## What confused me and what I learned
 
-The bridge currently carries traffic between the OPNsense `net0` / `vtnet0` LAN interface and the Ubuntu laboratory guest.
+The subscription error taught me to check where updates come from. The storage menus taught me to distinguish installation files from guest disks. The bridge diagram required me to trace the real connections before I could explain the network.
 
-Creating `vmbr1` provides an internal virtual network without requiring a separate physical switch. By itself, the bridge provides no routing or firewall enforcement; OPNsense supplies those functions in the current topology.
+The most useful habit was to connect a setting to its purpose. Instead of remembering only that I created `vmbr1`, I can explain that leaving out a physical uplink creates an internal virtual switch and that a separate firewall is responsible for routed access.
 
-## 6. Security Reasoning
+The longer [lessons learned](../../docs/lessons-learned.md) also cover disk-versus-memory confusion, ISO checksums, and repository path mistakes.
 
-### Dedicated hardware
+## Security choices and limits
 
-Using a separate physical computer reduces interference with normal personal-computer use and provides a controlled platform for experiments, snapshots, and guest operating systems.
+I keep normal Proxmox administration on the home-network side and have not configured router port forwarding for lab management. Temporary LAN-side administration is an explicit exception documented in the [security boundaries](../../docs/security-boundaries.md).
 
-### Trusted management path
+This remains one physical host with one active network interface. Proxmox management and OPNsense WAN share `vmbr0`. A host or storage failure can affect every VM, and an independent backup/restore process has not been tested. A snapshot would help with rollback but would still depend on the same storage.
 
-Proxmox administration remains on the upstream private network rather than the isolated laboratory bridge. This keeps routine hypervisor management separate from future test endpoints.
+## Where this leaves me
 
-### Internal-only bridge
+I have a working platform for the next exercises and a better understanding of virtual machines, storage, and network bridges. The skills I practiced here were installation-media preparation, Proxmox administration, repository selection, updates, storage review, bridge configuration, and documenting the result.
 
-Leaving `vmbr1` without a physical uplink prevents its guests from reaching the physical network directly through that bridge.
+OPNsense networking is documented in [LAB-02](../02-opnsense-segmentation/), and the ongoing Ubuntu baseline is in [LAB-03](../03-ubuntu-server-baseline/). Future projects remain in the [roadmap](../../ROADMAP.md).
 
-This isolation can still be bypassed by an incorrect VM configuration. For example, adding a second `vmbr0` adapter to a vulnerable guest would provide another network path. Guest adapter assignments must therefore be reviewed before startup.
-
-### No exposed services
-
-The lab does not use home-router port forwarding to expose Proxmox or future vulnerable services to the public internet.
-
-Detailed trust zones and required security controls are documented in [`security-boundaries.md`](../../docs/security-boundaries.md).
-
-## 7. Validation
-
-| Test ID | Validation | Expected result | Result |
-|---|---|---|---|
-| `PVE-VAL-01` | Boot the physical host | Proxmox starts successfully | **Pass** |
-| `PVE-VAL-02` | Open the management interface from the trusted workstation | Proxmox login page is reachable | **Pass** |
-| `PVE-VAL-03` | Refresh configured repositories | Appropriate repositories respond without enterprise-subscription errors | **Pass** |
-| `PVE-VAL-04` | Install available updates | Update process completes successfully | **Pass** |
-| `PVE-VAL-05` | Review Proxmox storage | `local` and `local-lvm` are available for their intended roles | **Pass** |
-| `PVE-VAL-06` | Review `vmbr0` | Bridge is active and connected to the physical interface | **Pass** |
-| `PVE-VAL-07` | Review `vmbr1` | Bridge is active with no physical uplink | **Pass** |
-
-Later OPNsense and Ubuntu work provided cross-project confirmation that isolated guests can use `vmbr1`. That integration evidence belongs to `LAB-02` and `LAB-03`; it is not required to validate the Proxmox foundation itself.
-
-## 8. Evidence
-
-The evidence index, validation traceability, captions, and sanitization record are maintained in [`evidence/README.md`](evidence/README.md).
-
-The [published evidence pack](evidence/) contains six selected artifacts that support the validation results:
-
-| Evidence ID | Required artifact | Status |
-|---|---|---|
-| `PVE-E01` | Sanitized node Summary screenshot | **Published** |
-| `PVE-E02` | Sanitized repository configuration screenshot | **Published** |
-| `PVE-E03A` | Sanitized `local` storage overview screenshot | **Published** |
-| `PVE-E03B` | Sanitized `local-lvm` storage overview screenshot | **Published** |
-| `PVE-E04` | Sanitized `vmbr0` and `vmbr1` configuration screenshot | **Published** |
-| `PVE-E05` | Complete `pveversion -v` text output | **Published** |
-
-Together, these artifacts document the operational node, repository configuration, storage roles, virtual bridges, and installed platform versions without exposing the removed network and hardware identifiers.
-
-## 9. Problems Encountered
-
-### Enterprise repository required a subscription
-
-**Observed behavior:** The default enterprise repository could not be used without a valid subscription.
-
-**Resolution:** Disabled the enterprise repository, enabled the official no-subscription repository, refreshed package information, and installed available updates.
-
-**Lesson:** Repository selection must match the organization’s licensing and support model. Disabling one repository is not sufficient unless an appropriate update source is also enabled.
-
-### Storage locations served different purposes
-
-**Observed issue:** `local` and `local-lvm` appeared similar in the interface but did not accept the same content types.
-
-**Resolution:** Used `local` for installation ISOs and `local-lvm` for guest virtual disks.
-
-**Lesson:** A storage pool’s configured content types determine how it should be used.
-
-### Virtual bridge roles required clarification
-
-**Observed issue:** The positions of `vmbr0` and `vmbr1` were initially confusing in the network diagram.
-
-**Resolution:** Traced each bridge through its physical and virtual attachments and corrected the diagram.
-
-**Lesson:** A bridge name does not define its role. Its physical port, guest connections, IP configuration, and routing determine its actual function.
-
-Additional troubleshooting details are maintained in [`lessons-learned.md`](../../docs/lessons-learned.md).
-
-## 10. Skills Demonstrated
-
-- Bare-metal hypervisor installation
-- Bootable installation-media preparation
-- Proxmox web administration
-- Linux software-repository management
-- Operating-system patching
-- Virtual storage-pool interpretation
-- Linux bridge configuration
-- Physical versus virtual network-path analysis
-- Secure network-design planning
-- Configuration validation
-- Technical documentation and evidence sanitization
-
-## 11. Limitations
-
-- The lab currently uses one physical Proxmox host.
-- High availability is not available.
-- Proxmox management and OPNsense WAN share the upstream bridge.
-- The host currently uses one active physical network interface.
-- VM disks and snapshots depend on local host storage.
-- An independent backup-and-restore process has not yet been validated.
-- Resource limits require task-specific VM operating groups.
-- `vmbr1` alone does not provide firewall enforcement; OPNsense supplies the routed security boundary.
-
-## 12. Outcome
-
-The completed foundation provides:
-
-- A stable Proxmox virtualization host
-- Trusted remote management
-- Updated system software
-- Defined ISO and virtual-disk storage roles
-- An operational upstream bridge
-- An operational internal-only lab bridge
-- A bridge foundation subsequently used by the OPNsense and Ubuntu projects
-
-This foundation supports the next two projects:
-
-1. OPNsense network segmentation and firewall validation
-2. Ubuntu Server administration and security baseline
-
-## 13. Related Documentation
-
-- [Lab architecture](../../docs/architecture.md)
-- [Security boundaries](../../docs/security-boundaries.md)
-- [Lessons learned](../../docs/lessons-learned.md)
-- [Project roadmap](../../ROADMAP.md)
-
-## 14. Change Log
+## Change log
 
 | Date | Change |
 |---|---|
-| 2026-09-03 | Updated the foundation diagram to show the verified current OPNsense adapter mapping and Ubuntu attachment while preserving LAB-01 scope. |
-| 2026-09-03 | Published the sanitized evidence pack with validation mapping and concise captions. |
-| 2026-09-02 | Created the initial Proxmox Foundation project documentation. |
+| 2026-09-25 | Rewrote the project around what I did and learned; clarified evidence limits and the temporary management exception. |
+| 2026-09-03 | Aligned the diagram with the OPNsense adapter mapping and published the sanitized evidence pack. |
+| 2026-09-02 | Created the Proxmox Foundation write-up. |
