@@ -2,8 +2,8 @@
 
 > **Technical status:** In progress  
 > **Portfolio status:** Drafting — evidence collection in progress  
-> **Evidence captured:** 4 of 9 core artifacts reviewed  
-> **Last reviewed:** 2026-09-09
+> **Evidence captured:** 5 of 9 core artifacts reviewed  
+> **Last reviewed:** 2026-09-25
 
 ## 1. Purpose
 
@@ -36,7 +36,7 @@ These artifacts validate network participation and the routed firewall path. The
 | `UBU-E02` | [`02-ubuntu-platform-and-updates.txt`](02-ubuntu-platform-and-updates.txt) | **Captured — reviewed** | Ubuntu 26.04.1 LTS platform state, synchronized UTC time, successful metadata refresh, completed reboot, and two explicitly identified upgrades deferred by phased rollout |
 | `UBU-E03` | [`03-ubuntu-account-separation.txt`](03-ubuntu-account-separation.txt) | **Captured — reviewed** | Separate interactive administrative and standard accounts use Bash shells, with only the administrative role holding sudo-group membership |
 | `UBU-E04` | [`04-ubuntu-services-and-ssh.txt`](04-ubuntu-services-and-ssh.txt) | **Captured — reviewed** | Valid OpenSSH syntax, socket activation, TCP/22 listeners, and hardened effective settings; lockout-safe client tests also validated key login and password rejection |
-| `UBU-E05` | `05-ubuntu-ufw-status.txt` | **Needed** | UFW active state, default policy, logging state, and explicit allow rules |
+| `UBU-E05` | [`05-ubuntu-ufw-status.txt`](05-ubuntu-ufw-status.txt) | **Captured — reviewed** | Active UFW state, low-volume logging, default-deny inbound policy, allowed outbound traffic, disabled routed traffic, and SSH limited to `10.10.10.2` |
 | `UBU-E06` | `06-ubuntu-services-and-auth-log.txt` | **Needed** | Reviewed running services and a short, timestamped authentication-log excerpt from a controlled event |
 | `UBU-E07` | `07-ubuntu-ufw-independent-test.txt` | **Needed** | An independent source on `vmbr1` reaches an approved service while a controlled unapproved listening service is blocked and logged by UFW |
 | `UBU-E08` | `08-proxmox-ubuntu-snapshot.png` | **Needed** | A clearly labeled clean Ubuntu snapshot exists in Proxmox |
@@ -158,16 +158,19 @@ Do not publish private keys, authorized-key contents, password hashes, or the co
 
 ### `UBU-E05` — UFW policy
 
-Run:
+Run these two short commands:
 
 ```bash
-{
-  date -u +'%Y-%m-%dT%H:%M:%SZ'
-  sudo ufw status verbose
-} 2>&1 | tee ~/05-ubuntu-ufw-status.txt
+date -u | tee ~/05-ubuntu-ufw-status.txt
 ```
 
-> **Draft caption:** Timestamped UFW status showing the active host firewall, default policy, logging state, and explicitly permitted inbound services.
+```bash
+sudo ufw status verbose | tee -a ~/05-ubuntu-ufw-status.txt
+```
+
+The first command creates the timestamped evidence file. The second appends the effective UFW policy without overwriting the timestamp.
+
+> **Caption:** Timestamped UFW status showing an active host firewall with low-volume logging, default-deny inbound policy, allowed outbound traffic, disabled routed traffic, and TCP/22 permitted only from the temporary Proxmox management endpoint at `10.10.10.2`.
 
 ### `UBU-E06` — Running services and authentication log
 
@@ -246,7 +249,8 @@ Redaction must cover each protected value completely without hiding the surround
 - [x] Account evidence distinguishes administrative and standard privileges.
 - [x] Current patch state is recorded after refreshing package metadata.
 - [x] Effective SSH settings, runtime state, and listening sockets have been reviewed.
-- [ ] UFW configuration and independent allow/block behavior both have evidence.
+- [x] Active UFW configuration, defaults, logging, and the scoped SSH rule have been reviewed.
+- [ ] Independent UFW allow/block behavior has been tested and documented.
 - [ ] Authentication evidence is short, relevant, timestamped, and sanitized.
 - [ ] Snapshot existence and successful rollback are supported by different evidence.
 - [ ] No artifact contains credentials, keys, password hashes, protected addresses, MAC addresses, or unique machine identifiers.

@@ -3,7 +3,7 @@
 > **Technical status:** In progress  
 > **Portfolio status:** Drafting — evidence collection in progress  
 > **Platform:** Ubuntu Server virtual machine on Proxmox VE  
-> **Last reviewed:** 2026-09-09
+> **Last reviewed:** 2026-09-25
 
 ## 1. Objective
 
@@ -19,7 +19,7 @@ The current implementation state is:
 - Installed operating-system updates
 - Configured OpenSSH access
 - Hardened OpenSSH for the administrative role and validated an Ed25519 key-only login plus password-authentication rejection
-- Enabled the UFW host firewall
+- Enabled UFW with default-deny inbound policy, low-volume logging, and SSH limited to the temporary Proxmox management source
 - Verified IPv4 addressing, routing, DNS, and approved HTTPS egress through OPNsense during `LAB-02`
 
 These statements remain provisional within this project until their LAB-03 evidence artifacts are captured and reviewed. The project does not yet claim a completed security baseline.
@@ -43,7 +43,7 @@ The Ubuntu VM has one intended virtual network adapter on `vmbr1`. It must not r
 | `UBU-VAL-02` | Administrative and standard accounts have intentionally different privilege levels | **Pass — separate accounts captured; sudo limited to the administrative role** |
 | `UBU-VAL-03` | Current Ubuntu version, kernel, time synchronization, and patch state are recorded | **Pass — evidence captured; two packages deferred by phased rollout** |
 | `UBU-VAL-04` | OpenSSH is enabled, active, listening as expected, and reviewed using effective settings | **Pass — socket activation, hardened effective policy, key-only login, and password rejection validated** |
-| `UBU-VAL-05` | UFW is active with documented defaults and explicit rules | **Configured — validation pending** |
+| `UBU-VAL-05` | UFW is active with documented defaults and explicit rules | **Pass — active policy captured; fresh SSH connection succeeded through the scoped allow rule** |
 | `UBU-VAL-06` | Running services, listening sockets, and relevant authentication logs are reviewed | **Not yet performed** |
 | `UBU-VAL-07` | UFW allows the approved service and blocks a controlled unapproved service from an independent lab endpoint | **Not yet performed** |
 | `UBU-VAL-08` | A labeled clean snapshot is created and a controlled rollback is functionally verified | **Not yet performed** |
@@ -66,13 +66,13 @@ Existing `LAB-02` artifacts are referenced for Ubuntu's DHCP lease and routed IP
 
 Until the remaining validation is complete, the accurate portfolio statement is:
 
-> Deployed an Ubuntu Server VM on the isolated Proxmox lab network, separated administrative and standard user privileges, installed updates, hardened OpenSSH for key-only administrative access, and enabled UFW. Guest-level service, firewall, log, and recovery validation remains in progress.
+> Deployed an Ubuntu Server VM on the isolated Proxmox lab network, separated administrative and standard user privileges, installed updates, hardened OpenSSH for key-only administrative access, and enforced a default-deny UFW policy with scoped SSH ingress. Independent firewall, service, log, and recovery validation remains in progress.
 
 The project remains **In progress / Drafting** until the evidence pack passes its publication checklist.
 
 ## 8. Next Actions
 
-1. Capture UFW, service, and log evidence.
+1. Capture running-service and authentication-log evidence.
 2. Review the results and correct any unexpected exposure before calling the baseline verified.
 3. Validate UFW from an independent source on `vmbr1`.
 4. Create a labeled snapshot, make one controlled change, roll back, and verify service health.
@@ -91,6 +91,7 @@ The project remains **In progress / Drafting** until the evidence pack passes it
 
 | Date | Change |
 |---|---|
+| 2026-09-25 | Activated UFW with low-volume logging, default-deny inbound policy, allowed outbound traffic, disabled routed traffic, and SSH limited to the temporary Proxmox management source; verified a fresh key-authenticated SSH connection after activation and added the reviewed policy artifact. |
 | 2026-09-09 | Hardened OpenSSH for public-key-only administrative access, denied root login, reduced authentication attempts, disabled forwarding features, completed lockout-safe positive and negative client tests, and added the reviewed consolidated SSH artifact. |
 | 2026-09-09 | Confirmed Ubuntu's systemd SSH socket activation and successfully tested an Ed25519 key-only administrative login; retained SSH hardening and final evidence recapture as open work. |
 | 2026-09-08 | Added reviewed VM-hardware, Ubuntu platform/update, and account-separation evidence; recorded the completed reboot and phased deferral of two audit-library packages; created a standard account and verified that sudo remains limited to the administrative role. |
