@@ -1,98 +1,119 @@
 # Project 03: Ubuntu Server Security Baseline
 
-> **Technical status:** In progress  
-> **Portfolio status:** Drafting — evidence collection in progress  
-> **Platform:** Ubuntu Server virtual machine on Proxmox VE  
+> **Technical status:** In progress\
+> **Portfolio status:** Drafting; 5 of 9 core evidence artifacts reviewed\
+> **Platform:** Ubuntu Server VM on Proxmox VE\
 > **Last reviewed:** 2026-09-25
 
-## 1. Objective
+## What I am trying to learn
 
-Establish a documented Ubuntu Server baseline that demonstrates operating-system administration, account separation, patching, remote administration, host-firewall policy, service and port review, log analysis, and recoverability.
+This is my first hands-on Linux server project. I am learning how to manage accounts, install updates, connect remotely, review services, and decide which incoming connections the server should accept.
 
-## 2. Current Scope
+A **security baseline** is the starting configuration I want to understand and be able to return to after an experiment. I have completed several setup steps, but the overall baseline is still in progress because I have not finished the broader service/log review, independent firewall testing, or snapshot recovery exercise.
 
-The current implementation state is:
+## Where Ubuntu sits in the lab
 
-- Installed Ubuntu Server as Proxmox VM `101`
-- Attached the VM to the internal-only `vmbr1` lab network
-- Created separate administrative and standard accounts with sudo membership limited to the administrative role
-- Installed operating-system updates
-- Configured OpenSSH access
-- Hardened OpenSSH for the administrative role and validated an Ed25519 key-only login plus password-authentication rejection
-- Enabled UFW with default-deny inbound policy, low-volume logging, and SSH limited to the temporary Proxmox management source
-- Verified IPv4 addressing, routing, DNS, and approved HTTPS egress through OPNsense during `LAB-02`
-
-These statements remain provisional within this project until their LAB-03 evidence artifacts are captured and reviewed. The project does not yet claim a completed security baseline.
-
-## 3. Architecture and Boundary
-
-| Layer | Current role |
+| Component | Recorded role or setting |
 |---|---|
-| Proxmox VM `101` | Full QEMU/KVM virtual machine for complete guest-operating-system administration |
-| Proxmox `vmbr1` | Internal-only virtual bridge with no physical uplink |
-| OPNsense LAN | Provides the VM's IPv4 gateway, DHCP, DNS forwarding, routed firewall path, and NAT |
-| Ubuntu host controls | User/group permissions, OpenSSH configuration, UFW policy, services, sockets, and system logs |
+| Proxmox VM | `101`, with 2 virtual CPU cores and a 40 GiB main disk |
+| Memory display | The hardware screenshot shows `2.00 GiB / 4.00 GiB`; a configuration review is still needed to explain the memory settings fully |
+| Network adapter | One VirtIO adapter on `vmbr1` |
+| Gateway and DNS | OPNsense LAN at `10.10.10.1` |
+| Guest platform | Ubuntu 26.04.1 LTS, recorded in the September 8 platform output |
+| Host controls | Accounts and permissions, OpenSSH, UFW, services, and local logs |
 
-The Ubuntu VM has one intended virtual network adapter on `vmbr1`. It must not receive an additional adapter on `vmbr0`, because that would bypass the documented OPNsense path.
+`vmbr1` is the internal lab switch. Ubuntu uses OPNsense for normal traffic to other networks. The [LAB-02 evidence](../02-opnsense-segmentation/evidence/) already records its DHCP lease and working IPv4 egress, so I reference those files here.
 
-## 4. Implementation and Validation Status
+For workstation SSH access, the documented setup uses local forwarding through Proxmox with a temporary lab-side address of `10.10.10.2`. Ubuntu sees that Proxmox address as the source. This connection stays on the lab subnet and is separate from the routed outbound SSH connection blocked in LAB-02.
 
-| Validation ID | Control or activity | Current status |
-|---|---|---|
-| `UBU-VAL-01` | Ubuntu uses `vmbr1` and obtains working IPv4 configuration through OPNsense | **Pass — supported by LAB-02 evidence** |
-| `UBU-VAL-02` | Administrative and standard accounts have intentionally different privilege levels | **Pass — separate accounts captured; sudo limited to the administrative role** |
-| `UBU-VAL-03` | Current Ubuntu version, kernel, time synchronization, and patch state are recorded | **Pass — evidence captured; two packages deferred by phased rollout** |
-| `UBU-VAL-04` | OpenSSH is enabled, active, listening as expected, and reviewed using effective settings | **Pass — socket activation, hardened effective policy, key-only login, and password rejection validated** |
-| `UBU-VAL-05` | UFW is active with documented defaults and explicit rules | **Pass — active policy captured; fresh SSH connection succeeded through the scoped allow rule** |
-| `UBU-VAL-06` | Running services, listening sockets, and relevant authentication logs are reviewed | **Not yet performed** |
-| `UBU-VAL-07` | UFW allows the approved service and blocks a controlled unapproved service from an independent lab endpoint | **Not yet performed** |
-| `UBU-VAL-08` | A labeled clean snapshot is created and a controlled rollback is functionally verified | **Not yet performed** |
+The [architecture](../../docs/architecture.md) and [security boundaries](../../docs/security-boundaries.md) explain that management exception. Earlier cleanup is recorded for LAB-02, but removal after the latest Ubuntu session has not been evidenced.
 
-## 5. Evidence
+## What I have done so far
 
-The evidence inventory, capture commands, draft captions, sanitization rules, and publication gates are maintained in [`evidence/README.md`](evidence/README.md).
+### Created separate accounts
 
-Existing `LAB-02` artifacts are referenced for Ubuntu's DHCP lease and routed IPv4 egress. LAB-03 will not duplicate those files; its own evidence will focus on the guest operating system and host controls.
+I created an administrative account and a standard account. The saved group output shows the administrative account in the `sudo` group and the standard account outside it. `sudo` is how an authorized user deliberately runs a command with elevated privileges.
 
-## 6. Current Limitations
+This gave me a first look at separating routine access from administration. It is a group-membership check, not a complete review of every permission. The administrative account also has other groups, including `lxd`, which should be considered during the remaining privilege and service review.
 
-- Two audit-library upgrades were pending at capture time because Ubuntu deliberately deferred them through its phased rollout; no reboot was pending.
-- Running services, listening ports, and authentication logs have not yet been documented.
-- UFW has not yet been tested from an independent lab endpoint.
-- A clean snapshot and rollback test have not yet been completed.
-- A Proxmox snapshot will not be described as an independent backup.
+### Installed updates and recorded what remained
 
-## 7. Publication Boundary
+The September 8 evidence records Ubuntu 26.04.1 LTS, kernel `7.0.0-31-generic`, synchronized UTC time, and no pending reboot requirement. Two audit-library packages were deferred by Ubuntu's phased rollout.
 
-Until the remaining validation is complete, the accurate portfolio statement is:
+I kept those pending packages in the record so the result is accurate. This describes the system at capture time; it is not a claim that the server has no pending updates today.
 
-> Deployed an Ubuntu Server VM on the isolated Proxmox lab network, separated administrative and standard user privileges, installed updates, hardened OpenSSH for key-only administrative access, and enforced a default-deny UFW policy with scoped SSH ingress. Independent firewall, service, log, and recovery validation remains in progress.
+### Configured and hardened SSH
 
-The project remains **In progress / Drafting** until the evidence pack passes its publication checklist.
+SSH lets me open an encrypted terminal session from another computer. I enrolled an Ed25519 public key for the administrative account before tightening the server settings.
 
-## 8. Next Actions
+The [SSH artifact](evidence/04-ubuntu-services-and-ssh.txt) records valid syntax, active listening sockets, public-key-only authentication for the administrative role, disabled password and keyboard-interactive authentication, denied root login, and disabled forwarding features on Ubuntu's SSH server.
 
-1. Capture running-service and authentication-log evidence.
-2. Review the results and correct any unexpected exposure before calling the baseline verified.
-3. Validate UFW from an independent source on `vmbr1`.
-4. Create a labeled snapshot, make one controlled change, roll back, and verify service health.
-5. Complete sanitization and cross-document consistency review before publication.
+The setup notes record keeping an existing session open while applying the changes, then successfully testing a fresh key-only login and rejected password attempts. Those client screenshots were not published because they contained identifiers. The committed text preserves the resulting server configuration and runtime state.
 
-## 9. Related Documentation
+One confusing result was that `ssh.service` showed disabled for direct startup but active, while `ssh.socket` was enabled and active. I learned that socket activation can provide the listener and activate the SSH service. A single enabled/disabled line was not enough to explain the service's behavior.
 
-- [LAB-03 evidence plan](evidence/README.md)
-- [LAB-02 OPNsense evidence](../02-opnsense-segmentation/evidence/)
+### Enabled UFW with a specific management source
+
+UFW is the firewall on Ubuntu itself. The September 25 [status output](evidence/05-ubuntu-ufw-status.txt) shows it active with low-volume logging, default-deny incoming policy, allowed outgoing traffic, and routed traffic reported as disabled.
+
+Its explicit SSH rule allows TCP/22 from `10.10.10.2`, the temporary Proxmox management source. The setup notes record a fresh successful SSH connection after activation. The saved artifact shows the policy; I still need independent blocked-traffic evidence.
+
+The source restriction matters: another lab VM with a different address should not automatically be able to SSH into Ubuntu. The planned test needs to distinguish allowed management access from denied access by an independent source.
+
+## What is checked and what is still open
+
+| Validation | Recorded status |
+|---|---|
+| `UBU-VAL-01`: Ubuntu uses the lab IPv4 network | Supported by LAB-02 DHCP/egress evidence and LAB-03 VM hardware |
+| `UBU-VAL-02`: Account separation | Separate accounts and sudo-group membership captured; full effective-permission review remains |
+| `UBU-VAL-03`: Platform and update state | Captured September 8, including two phased deferrals |
+| `UBU-VAL-04`: SSH configuration and access | Effective settings/runtime captured; key-login and password-rejection tests recorded in setup notes |
+| `UBU-VAL-05`: Active UFW policy | Captured September 25; fresh allowed SSH connection recorded in setup notes |
+| `UBU-VAL-06`: Full services, listening ports, and authentication-log review | Still needed; the existing socket review covers SSH |
+| `UBU-VAL-07`: Independent UFW allow/deny validation | Still needed |
+| `UBU-VAL-08`: Snapshot and controlled rollback | Still needed |
+
+The [evidence index](evidence/README.md) tracks the five captured artifacts and the four still needed. It also preserves the collection instructions and explains which tests have only been recorded in the setup notes.
+
+## What the two firewalls taught me
+
+OPNsense can filter traffic when it crosses the routed boundary between the lab and upstream networks. UFW can filter traffic at Ubuntu, including traffic from another guest on the same lab subnet. Those local guest-to-guest connections normally bypass OPNsense.
+
+I also learned to separate a listening service from a reachable service. SSH can listen on an address while a firewall limits who can connect. The recorded SSH listener includes IPv6, so IPv6 review remains necessary; the IPv4 UFW rule does not settle that question.
+
+The Proxmox hardware view has its NIC firewall checkbox enabled. That is a setting shown in the screenshot, but I have not demonstrated a separate Proxmox firewall policy from it.
+
+## My next steps
+
+1. Review all running services, listening ports, relevant groups/permissions, and a short authentication-log excerpt.
+2. Test a fresh allowed SSH connection from the documented management source and denied traffic from an independent lab endpoint. Use a temporary listening service to make the blocked-port test meaningful, then remove it.
+3. Confirm cleanup of the temporary management address and tunnel after use.
+4. Create a labeled clean snapshot after the baseline review, make one harmless change, roll back, and check networking, SSH, and UFW again.
+5. Complete the evidence review before marking the whole project verified.
+
+The snapshot exercise will demonstrate rollback. An independent backup and restore remains separate future work.
+
+## What I can describe at this stage
+
+I have deployed a Linux server, separated two account roles, recorded its update state, tightened SSH authentication, and enabled a source-restricted host firewall. I am still learning to explain how those settings interact and to support them with repeatable tests.
+
+The project remains **In progress / Drafting**. Its remaining tests and broader network limits are part of the result, not reasons to mark completed setup steps as unfinished.
+
+## Related notes
+
+- [Evidence and collection plan](evidence/README.md)
+- [OPNsense project](../02-opnsense-segmentation/)
+- [Lessons learned](../../docs/lessons-learned.md)
 - [Lab architecture](../../docs/architecture.md)
 - [Security boundaries](../../docs/security-boundaries.md)
-- [Lessons learned](../../docs/lessons-learned.md)
-- [Project roadmap](../../ROADMAP.md)
+- [Roadmap](../../ROADMAP.md)
 
-## 10. Change Log
+## Change log
 
 | Date | Change |
 |---|---|
-| 2026-09-25 | Activated UFW with low-volume logging, default-deny inbound policy, allowed outbound traffic, disabled routed traffic, and SSH limited to the temporary Proxmox management source; verified a fresh key-authenticated SSH connection after activation and added the reviewed policy artifact. |
-| 2026-09-09 | Hardened OpenSSH for public-key-only administrative access, denied root login, reduced authentication attempts, disabled forwarding features, completed lockout-safe positive and negative client tests, and added the reviewed consolidated SSH artifact. |
-| 2026-09-09 | Confirmed Ubuntu's systemd SSH socket activation and successfully tested an Ed25519 key-only administrative login; retained SSH hardening and final evidence recapture as open work. |
-| 2026-09-08 | Added reviewed VM-hardware, Ubuntu platform/update, and account-separation evidence; recorded the completed reboot and phased deferral of two audit-library packages; created a standard account and verified that sudo remains limited to the administrative role. |
-| 2026-09-07 | Created the LAB-03 drafting outline and separated completed setup activities from pending guest, firewall, log, and recovery validation. |
+| 2026-09-25 | Rewrote the project in a first-project voice; aligned claims with the five captured artifacts and clarified temporary access, memory display, and remaining tests. |
+| 2026-09-25 | Captured active UFW policy with SSH restricted to the temporary Proxmox source; recorded a fresh successful SSH connection after activation. |
+| 2026-09-09 | Hardened SSH, reviewed effective settings and socket activation, and recorded key-login and password-rejection tests. |
+| 2026-09-08 | Added VM hardware, platform/update, and account-separation evidence. |
+| 2026-09-07 | Created the Ubuntu project outline and evidence plan. |

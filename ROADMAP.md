@@ -1,10 +1,10 @@
 # Cybersecurity Home Lab Roadmap
 
-Last updated: 2026-09-05
+Last updated: 2026-09-25
 
-This roadmap describes the planned development of a segmented cybersecurity home lab built on Proxmox VE. The lab is intended to demonstrate practical experience in virtualization, network security, Linux and Windows administration, identity management, security monitoring, recovery testing, and authorized vulnerability assessment.
+This roadmap is my learning plan for a first hands-on IT lab. I am starting with Proxmox, networking, and Linux administration, then building toward Windows, identity, monitoring, recovery, and authorized security testing. My goal is to understand and explain each layer before depending on it in a larger project.
 
-The planned progression connects those foundations to a simulated clinical laboratory environment: infrastructure → endpoint and identity administration → monitoring → healthcare integration → authorized attack and vulnerability validation. The healthcare project is an integration capstone, not a replacement for the foundational labs.
+I want to connect these foundations to my microbiology background through a simulated clinical laboratory: infrastructure → endpoint and identity administration → monitoring → healthcare integration → authorized control and vulnerability testing. The healthcare project will bring the earlier skills together.
 
 This is a public, high-level plan. Detailed task tracking, unsanitized configurations, credentials, and private network information are intentionally kept outside this repository. Healthcare scenarios will use synthetic data only, with no patient information or internal employer configurations.
 
@@ -12,7 +12,7 @@ This is a public, high-level plan. Detailed task tracking, unsanitized configura
 
 | Status | Meaning |
 |---|---|
-| **Verified** | The control or system was implemented, tested, and produced repeatable results. |
+| **Verified** | The control or system was implemented, tested, and produced repeatable results within the stated scope. |
 | **In progress** | Implementation or validation is currently underway. |
 | **Planned** | The milestone has been defined but work has not started. |
 | **Optional** | A stretch goal that will be pursued after the core lab is operational. |
@@ -39,6 +39,8 @@ Portfolio documentation is tracked separately from technical implementation:
 | `LAB-08` | Kali attack and control validation | **Planned** | **Not started** |
 | `LAB-09` | Vulnerable systems and web applications | **Planned** | **Not started** |
 
+The three existing project folders are LAB-01 through LAB-03. LAB-02's verified scope is its recorded IPv4 setup and one logged SSH denial test. LAB-03 has five of nine core evidence artifacts reviewed, including hardened SSH settings and active UFW policy; the overall baseline remains in progress. Capture dates describe the saved state, not a live system check.
+
 ## Sequencing and Healthcare Focus
 
 Windows endpoint administration and Active Directory come before centralized monitoring. Wazuh then provides a monitoring foundation for the healthcare capstone and later authorized testing. Kali and deliberately vulnerable targets are not prerequisites for the initial healthcare project.
@@ -58,7 +60,7 @@ Project paths below are naming targets where a folder does not yet exist. Only e
 Completed work:
 
 - [x] Install Proxmox VE on the dedicated lab host.
-- [x] Configure secure management access from the trusted home network.
+- [x] Establish management access from the trusted home network.
 - [x] Configure appropriate software repositories and install updates.
 - [x] Review local storage roles for ISO images and virtual disks.
 - [x] Create `vmbr1` as an isolated virtual bridge with no physical uplink.
@@ -121,9 +123,12 @@ Planned and ongoing work:
 - [x] Create administrative and standard user accounts.
 - [x] Install operating-system updates.
 - [x] Configure OpenSSH access.
-- [x] Enable the UFW host firewall.
-- [ ] Document users, groups, services, listening ports, and important logs.
-- [ ] Review SSH settings and move to key-based authentication after recovery access is confirmed.
+- [x] Capture separate accounts, group membership, and the dated platform/update state.
+- [x] Review SSH settings, configure public-key-only administrative access, and record successful key-login and rejected password tests.
+- [x] Capture active UFW defaults, logging, and SSH restricted to the temporary Proxmox source at `10.10.10.2`.
+- [ ] Complete the full services, listening-port, effective-permission, and authentication-log review.
+- [ ] Test allowed management access and blocked independent traffic against the documented UFW policy.
+- [ ] Confirm cleanup of the latest temporary Proxmox management address and tunnel.
 - [ ] Record a repeatable baseline-audit command set or script.
 - [ ] Create and label a clean Proxmox snapshot.
 - [ ] Test one controlled change and rollback.
@@ -132,7 +137,7 @@ Acceptance criteria:
 
 - Administrative tasks require deliberate privilege elevation.
 - Only expected services and ports are exposed.
-- UFW policy is documented and verified from another lab endpoint.
+- UFW policy is documented, with a successful connection from the allowed management source and denied traffic from an independent lab endpoint; temporary test services or rules are removed.
 - Relevant authentication and service events can be located in system logs.
 - The clean baseline can be restored successfully.
 
@@ -406,7 +411,9 @@ Healthcare scenarios use synthetic data and fictional workflows only. A simulate
 
 This roadmap will be updated when a milestone changes state. A status changes to **Verified** only after its acceptance criteria have been tested, and a portfolio status changes to **Published** only after the supporting evidence has been sanitized and committed.
 
-The 2026-09-09 revision adds an in-progress `LAB-03` write-up and three reviewed evidence artifacts while retaining SSH hardening, UFW testing, service/log review, and recovery validation as open work.
+The 2026-09-25 documentation audit aligns the overview with five reviewed LAB-03 artifacts. SSH hardening and UFW configuration are recorded as completed steps. Full service/port/log and effective-permission review, independent UFW tests, latest temporary-path cleanup confirmation, and snapshot/rollback validation remain open. Project statuses and the planned LAB-04 through LAB-09 sequence are retained.
+
+Earlier LAB-03 revisions added the project outline, hardware, platform/update, and account evidence, followed by the hardened SSH record.
 
 The 2026-09-07 revision publishes the sanitized `LAB-02` project and evidence pack while retaining the open protected-network, management-access, and IPv6 validation work.
 

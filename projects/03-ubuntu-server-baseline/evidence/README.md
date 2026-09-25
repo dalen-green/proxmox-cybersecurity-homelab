@@ -1,15 +1,15 @@
 # LAB-03 Evidence Pack
 
-> **Technical status:** In progress  
-> **Portfolio status:** Drafting — evidence collection in progress  
-> **Evidence captured:** 5 of 9 core artifacts reviewed  
+> **Technical status:** In progress\
+> **Portfolio status:** Drafting — evidence collection in progress\
+> **Evidence captured:** 5 of 9 core artifacts reviewed\
 > **Last reviewed:** 2026-09-25
 
 ## 1. Purpose
 
-This pack will support the claims in the [Ubuntu Server Security Baseline project](../README.md) with selected, sanitized configuration and functional evidence.
+I am collecting this evidence so I can explain the [Ubuntu baseline](../README.md) using saved results. Five core artifacts are reviewed so far, and four still need to be collected. The existing files describe their capture dates; revising this index does not rerun the checks.
 
-The pack deliberately distinguishes:
+I am learning to distinguish:
 
 - A setting that is present
 - A service that is currently running
@@ -32,13 +32,13 @@ These artifacts validate network participation and the routed firewall path. The
 
 | Evidence ID | Planned filename | Status | Required proof |
 |---|---|---|---|
-| `UBU-E01` | [`01-proxmox-ubuntu-hardware.png`](01-proxmox-ubuntu-hardware.png) | **Captured — reviewed** | VM `101` has one intended network adapter on `vmbr1`, with its relevant CPU, memory, disk, and startup configuration visible |
-| `UBU-E02` | [`02-ubuntu-platform-and-updates.txt`](02-ubuntu-platform-and-updates.txt) | **Captured — reviewed** | Ubuntu 26.04.1 LTS platform state, synchronized UTC time, successful metadata refresh, completed reboot, and two explicitly identified upgrades deferred by phased rollout |
+| `UBU-E01` | [`01-proxmox-ubuntu-hardware.png`](01-proxmox-ubuntu-hardware.png) | **Captured — reviewed** | VM `101` has one network adapter on `vmbr1`, with CPU, memory-display values, and disk configuration visible; startup options are not shown |
+| `UBU-E02` | [`02-ubuntu-platform-and-updates.txt`](02-ubuntu-platform-and-updates.txt) | **Captured — reviewed** | Dated Ubuntu 26.04.1 LTS platform state, synchronized UTC time, successful metadata refresh, no outstanding reboot requirement, and two explicitly identified upgrades deferred by phased rollout |
 | `UBU-E03` | [`03-ubuntu-account-separation.txt`](03-ubuntu-account-separation.txt) | **Captured — reviewed** | Separate interactive administrative and standard accounts use Bash shells, with only the administrative role holding sudo-group membership |
-| `UBU-E04` | [`04-ubuntu-services-and-ssh.txt`](04-ubuntu-services-and-ssh.txt) | **Captured — reviewed** | Valid OpenSSH syntax, socket activation, TCP/22 listeners, and hardened effective settings; lockout-safe client tests also validated key login and password rejection |
+| `UBU-E04` | [`04-ubuntu-services-and-ssh.txt`](04-ubuntu-services-and-ssh.txt) | **Captured — reviewed** | Valid OpenSSH syntax, socket activation, TCP/22 listeners, and hardened effective settings; separate setup notes record key-login and password-rejection tests, whose client screenshots are not published |
 | `UBU-E05` | [`05-ubuntu-ufw-status.txt`](05-ubuntu-ufw-status.txt) | **Captured — reviewed** | Active UFW state, low-volume logging, default-deny inbound policy, allowed outbound traffic, disabled routed traffic, and SSH limited to `10.10.10.2` |
-| `UBU-E06` | `06-ubuntu-services-and-auth-log.txt` | **Needed** | Reviewed running services and a short, timestamped authentication-log excerpt from a controlled event |
-| `UBU-E07` | `07-ubuntu-ufw-independent-test.txt` | **Needed** | An independent source on `vmbr1` reaches an approved service while a controlled unapproved listening service is blocked and logged by UFW |
+| `UBU-E06` | `06-ubuntu-services-and-auth-log.txt` | **Needed** | Reviewed running services, all TCP/UDP listening sockets, and a short, timestamped authentication-log excerpt from a controlled event |
+| `UBU-E07` | `07-ubuntu-ufw-independent-test.txt` | **Needed** | A fresh connection from the allowed management source succeeds, while an independent unauthorized source is blocked with matching UFW evidence; a temporary unapproved listener makes the port-denial test meaningful |
 | `UBU-E08` | `08-proxmox-ubuntu-snapshot.png` | **Needed** | A clearly labeled clean Ubuntu snapshot exists in Proxmox |
 | `UBU-E09` | `09-ubuntu-rollback-validation.txt` | **Needed** | A controlled post-snapshot change disappears after rollback and expected network, SSH, and UFW health checks still pass |
 
@@ -52,7 +52,9 @@ In Proxmox, select VM `101` → **Hardware**. Keep the processor, memory, disk, 
 
 Before uploading or publishing, obscure virtual MAC addresses and any unrelated identifiers. Retain VM ID `101`, storage names, resource values, bridge names, and device types.
 
-> **Caption:** Proxmox hardware view for Ubuntu VM `101`, showing 2 GiB of memory, two CPU cores, a 40 GiB virtual disk, and one VirtIO network adapter attached to internal bridge `vmbr1` with Proxmox firewalling enabled. The virtual MAC address is redacted.
+> **Caption:** Proxmox hardware view for Ubuntu VM `101`, showing the memory row as `2.00 GiB / 4.00 GiB`, two CPU cores, a 40 GiB main virtual disk, and one VirtIO adapter on `vmbr1`. The NIC firewall option is checked and the virtual MAC address is redacted. This view does not establish a tested Proxmox firewall policy or startup order.
+
+I need a configuration review before describing the memory display more specifically. The earlier fixed-2-GiB caption omitted the second value shown in the screenshot.
 
 ### `UBU-E02` — Platform and update state
 
@@ -181,25 +183,31 @@ After one controlled successful SSH login from the authorized administrative wor
   date -u +'%Y-%m-%dT%H:%M:%SZ'
   printf '%s\n' 'Running services:'
   systemctl --no-pager --type=service --state=running
+  printf '\n%s\n' 'TCP and UDP listening sockets:'
+  sudo ss -lntup
   printf '\n%s\n' 'Recent SSH events:'
   sudo journalctl -u ssh --since '-30 minutes' --no-pager | tail -n 50
 } 2>&1 | tee ~/06-ubuntu-services-and-auth-log.txt
 ```
 
-The log excerpt must be sanitized for upstream addresses, usernames, hostnames, and unrelated events while retaining timestamps, service, authentication result, and event meaning.
+The socket output and log excerpt must be reviewed for protected addresses, usernames, hostnames, and unrelated events before publication. Retain the bind scope, ports, protocols, timestamps, service names, authentication result, and event meaning. Review the sockets against the running services instead of assuming every listener is expected.
 
-> **Draft caption:** Sanitized Ubuntu baseline showing currently running services and a timestamped SSH authentication event from an authorized administrative session.
+> **Draft caption:** Sanitized Ubuntu baseline showing running services, TCP/UDP listening sockets, and a timestamped SSH authentication event from an authorized administrative session.
 
 ### `UBU-E07` — Independent UFW validation
 
-This test requires an independent, authorized source attached to `vmbr1`. It should demonstrate both:
+The current rule permits SSH only from `10.10.10.2`, the temporary Proxmox management source. A second lab VM with a different source address is not expected to reach SSH automatically. The test must match that policy.
 
-1. The approved SSH service remains reachable.
-2. A deliberately started test listener on an unapproved port is blocked and produces a corresponding UFW log entry.
+The planned checks are:
 
-The listener must be temporary, bound only for the controlled test, and stopped immediately afterward. Exact commands will be selected after the independent test endpoint is available so the procedure matches its operating system and installed tools.
+1. Establish a fresh SSH connection through the allowed management path and record Ubuntu's observed source and the successful result.
+2. From a separate authorized test VM on `vmbr1`, attempt SSH and record the expected denial with a corresponding UFW log entry.
+3. Start a temporary listener on an unapproved port on Ubuntu, confirm that it is listening, and attempt a connection from the independent VM. Record the client result and matching UFW block.
+4. Stop the temporary listener and remove any deliberately added test rule. Recheck the original UFW policy and confirm temporary management-path cleanup after administration is complete.
 
-> **Draft caption:** Correlated client and Ubuntu firewall evidence showing that the approved SSH service is reachable while a controlled unapproved listening service is blocked and logged by UFW.
+If a permitted-service test from the independent VM is needed, its exact source and service require an explicitly documented temporary allow rule. Its result must be labeled as a test under that temporary policy. The default plan above leaves the existing source restriction in place. No test is complete yet, and exact commands will be chosen when the second endpoint is available.
+
+> **Draft caption:** Correlated client and Ubuntu evidence showing successful SSH from the permitted management source, denied SSH from an independent source, and a UFW block for a confirmed temporary listener on an unapproved port, followed by cleanup.
 
 ### `UBU-E08` and `UBU-E09` — Snapshot and rollback
 
@@ -247,10 +255,12 @@ Redaction must cover each protected value completely without hiding the surround
 - [ ] Captions describe only what the corresponding artifact visibly proves.
 - [x] VM `101` has one intended network adapter on `vmbr1` and none on `vmbr0`.
 - [x] Account evidence distinguishes administrative and standard privileges.
-- [x] Current patch state is recorded after refreshing package metadata.
+- [x] Patch state at the recorded capture time is documented after refreshing package metadata.
 - [x] Effective SSH settings, runtime state, and listening sockets have been reviewed.
 - [x] Active UFW configuration, defaults, logging, and the scoped SSH rule have been reviewed.
-- [ ] Independent UFW allow/block behavior has been tested and documented.
+- [ ] A fresh allowed management connection and independent UFW denial tests have been documented against the actual source-specific policy.
+- [ ] The full listening-port and effective-permission review is documented; the current socket artifact covers SSH.
+- [ ] Cleanup of temporary test services/rules and the latest temporary management path has been confirmed.
 - [ ] Authentication evidence is short, relevant, timestamped, and sanitized.
 - [ ] Snapshot existence and successful rollback are supported by different evidence.
 - [ ] No artifact contains credentials, keys, password hashes, protected addresses, MAC addresses, or unique machine identifiers.

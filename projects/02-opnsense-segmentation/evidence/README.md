@@ -1,20 +1,21 @@
 # LAB-02 Evidence Pack
 
-> **Technical status:** Verified for IPv4  
-> **Portfolio status:** Published  
-> **Platform captured:** OPNsense 26.7 (amd64)  
-> **Evidence captured:** 2026-09-07  
-> **Last reviewed:** 2026-09-07
+> **Technical status:** Verified for the recorded IPv4 setup and SSH test\
+> **Portfolio status:** Published\
+> **Platform captured:** OPNsense 26.7 (amd64)\
+> **Evidence captured:** 2026-09-07\
+> **Last reviewed:** 2026-09-07\
+> **Documentation revised:** 2026-09-25
 
 ## 1. Purpose
 
-This evidence pack supports the claims in the [OPNsense Network Segmentation project write-up](../README.md) with selected, sanitized artifacts.
+I kept these artifacts to explain the [OPNsense project](../README.md): how I connected the interfaces, checked Ubuntu's networking, and matched a blocked SSH attempt to the firewall log.
 
 The publication standard is deliberately narrow: the pack proves the implemented IPv4 topology, approved client networking, and one logged SSH test of the protected-destination block rule. It does not present that test as proof of comprehensive protected-network, management-plane, or IPv6 isolation.
 
-## 2. Evidence Required for Publication
+## 2. Published Evidence
 
-| Evidence ID | Planned filename | Review status | What the artifact must visibly demonstrate |
+| Evidence ID | Artifact | Review status | What I checked |
 |---|---|---|---|
 | `OPN-E01` | [`01-proxmox-opnsense-nics.png`](01-proxmox-opnsense-nics.png) | **Reviewed** | Proxmox `net0` is attached to `vmbr1`, and `net1` is attached to `vmbr0` |
 | `OPN-E02` | [`02-opnsense-interface-overview.png`](02-opnsense-interface-overview.png) | **Reviewed** | OPNsense maps `vtnet0` to LAN and `vtnet1` to WAN; LAN is `10.10.10.1/24` and WAN uses DHCP4 |
@@ -24,7 +25,7 @@ The publication standard is deliberately narrow: the pack proves the implemented
 | `OPN-E06` | [`06-ubuntu-ssh-denied.txt`](06-ubuntu-ssh-denied.txt) | **Reviewed** | A timestamped connection attempt to the controlled SSH test endpoint times out |
 | `OPN-E07` | [`07-opnsense-firewall-block.png`](07-opnsense-firewall-block.png) | **Reviewed** | Firewall-log entries at the matching time block the tested LAN IPv4 TCP/22 connection |
 
-All seven files are publication gates. An item remains **Needed** until the exact archive file is present, legible, sanitized, and reviewed against its caption.
+All seven files are present as reviewed publication copies. Their capture dates remain unchanged by this documentation revision.
 
 ## 3. Evidence Review Record
 
@@ -161,14 +162,14 @@ Redaction should cover the value completely without obscuring the nearby field l
 
 ## 7. Scope Boundary
 
-This pack may support these claims:
+These are the results I can explain from this pack:
 
 - OPNsense is connected between `vmbr0` and `vmbr1` using the documented adapter mapping.
 - The Ubuntu endpoint received IPv4 configuration and used approved DNS and HTTPS through OPNsense.
 - A logged IPv4 protected-destination block was ordered above the broader IPv4 LAN allow rule.
 - The controlled SSH attempt was denied and correlated with an OPNsense firewall-log entry.
 
-This pack must not claim that:
+I do not use this pack to claim that:
 
 - Every protocol or port from the lab to the protected upstream network is blocked.
 - Proxmox or OPNsense management access from the lab has been comprehensively denied and tested.
@@ -187,7 +188,7 @@ This pack must not claim that:
 - [x] Endpoint and firewall timestamps are close enough to support correlation.
 - [x] Captions state only what each artifact visibly demonstrates.
 - [x] Upstream addresses, MAC addresses, unique identifiers, and unrelated data are obscured.
-- [x] The project remains **Verified for IPv4** and does not imply completion of `VAL-05`, `VAL-06`, or `VAL-07`.
+- [x] The project remains verified for its recorded IPv4 setup and SSH test; `VAL-05`, `VAL-06`, and `VAL-07` remain open.
 - [x] `security-boundaries.md` describes the broader protected-destination rule while limiting functional validation to the observed SSH flow.
 - [x] Project README, evidence README, root README, and roadmap statuses are updated together when the pack is published.
 
