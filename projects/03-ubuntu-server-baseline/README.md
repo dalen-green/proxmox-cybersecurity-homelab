@@ -1,15 +1,15 @@
 # Project 03: Ubuntu Server Security Baseline
 
 > **Technical status:** In progress\
-> **Portfolio status:** Drafting; 5 of 9 core evidence artifacts reviewed\
+> **Portfolio status:** Drafting; 6 of 9 core evidence artifacts reviewed\
 > **Platform:** Ubuntu Server VM on Proxmox VE\
-> **Last reviewed:** 2026-09-25
+> **Last reviewed:** 2026-09-26
 
 ## What I am trying to learn
 
 This is my first hands-on Linux server project. I am learning how to manage accounts, install updates, connect remotely, review services, and decide which incoming connections the server should accept.
 
-A **security baseline** is the starting configuration I want to understand and be able to return to after an experiment. I have completed several setup steps, but the overall baseline is still in progress because I have not finished the broader service/log review, independent firewall testing, or snapshot recovery exercise.
+A **security baseline** is the starting configuration I want to understand and be able to return to after an experiment. I have completed several setup steps, but the overall baseline is still in progress because I have not finished the remaining privilege review, independent firewall testing, or snapshot recovery exercise.
 
 ## Where Ubuntu sits in the lab
 
@@ -60,6 +60,12 @@ Its explicit SSH rule allows TCP/22 from `10.10.10.2`, the temporary Proxmox man
 
 The source restriction matters: another lab VM with a different address should not automatically be able to SSH into Ubuntu. The planned test needs to distinguish allowed management access from denied access by an independent source.
 
+### Reviewed running services, listeners, and one authentication event
+
+The September 26 evidence records 20 running service units. I reviewed that inventory alongside a separate TCP/UDP listener diagnostic instead of disabling unfamiliar services simply because of their names. SSH was the only remotely listening server service. Local DNS and chrony listeners were bound to loopback, and the DHCP client listener on `ens18` was expected.
+
+Optional-looking units such as ModemManager, multipathd, udisks2, and upower did not expose listening network ports, so I left them unchanged pending a dependency-based review. A fresh SSH event also confirmed successful Ed25519 public-key authentication from the authorized `10.10.10.2` management source. The publication copy keeps the event meaning and timestamp while replacing the hostname, account, process ID, ephemeral source port, and key fingerprint. Remaining group and effective-permission review is still open.
+
 ## What is checked and what is still open
 
 | Validation | Recorded status |
@@ -69,11 +75,11 @@ The source restriction matters: another lab VM with a different address should n
 | `UBU-VAL-03`: Platform and update state | Captured September 8, including two phased deferrals |
 | `UBU-VAL-04`: SSH configuration and access | Effective settings/runtime captured; key-login and password-rejection tests recorded in setup notes |
 | `UBU-VAL-05`: Active UFW policy | Captured September 25; fresh allowed SSH connection recorded in setup notes |
-| `UBU-VAL-06`: Full services, listening ports, and authentication-log review | Still needed; the existing socket review covers SSH |
+| `UBU-VAL-06`: Running services, listening ports, and authentication-log review | Pass — service inventory and sanitized SSH event published; the all-listener diagnostic was reviewed during collection |
 | `UBU-VAL-07`: Independent UFW allow/deny validation | Still needed |
 | `UBU-VAL-08`: Snapshot and controlled rollback | Still needed |
 
-The [evidence index](evidence/README.md) tracks the five captured artifacts and the four still needed. It also preserves the collection instructions and explains which tests have only been recorded in the setup notes.
+The [evidence index](evidence/README.md) tracks the six captured artifacts and the three still needed. It also preserves the collection instructions and explains which tests have only been recorded in the setup notes.
 
 ## What the two firewalls taught me
 
@@ -85,7 +91,7 @@ The Proxmox hardware view has its NIC firewall checkbox enabled. That is a setti
 
 ## My next steps
 
-1. Review all running services, listening ports, relevant groups/permissions, and a short authentication-log excerpt.
+1. Review remaining group memberships and effective permissions, including whether optional administrative groups are actually required.
 2. Test a fresh allowed SSH connection from the documented management source and denied traffic from an independent lab endpoint. Use a temporary listening service to make the blocked-port test meaningful, then remove it.
 3. Confirm cleanup of the temporary management address and tunnel after use.
 4. Create a labeled clean snapshot after the baseline review, make one harmless change, roll back, and check networking, SSH, and UFW again.
@@ -95,7 +101,7 @@ The snapshot exercise will demonstrate rollback. An independent backup and resto
 
 ## What I can describe at this stage
 
-I have deployed a Linux server, separated two account roles, recorded its update state, tightened SSH authentication, and enabled a source-restricted host firewall. I am still learning to explain how those settings interact and to support them with repeatable tests.
+I have deployed a Linux server, separated two account roles, recorded its update state, tightened SSH authentication, enabled a source-restricted host firewall, and reviewed its running services, network listeners, and one controlled authentication event. I am still learning to explain how those settings interact and to support them with repeatable tests.
 
 The project remains **In progress / Drafting**. Its remaining tests and broader network limits are part of the result, not reasons to mark completed setup steps as unfinished.
 
@@ -112,6 +118,7 @@ The project remains **In progress / Drafting**. Its remaining tests and broader 
 
 | Date | Change |
 |---|---|
+| 2026-09-26 | Added the sanitized running-service and SSH authentication artifact, documented the all-listener review, and advanced the evidence count to six of nine while leaving privilege, independent-firewall, and recovery validation open. |
 | 2026-09-25 | Rewrote the project in a first-project voice; aligned claims with the five captured artifacts and clarified temporary access, memory display, and remaining tests. |
 | 2026-09-25 | Captured active UFW policy with SSH restricted to the temporary Proxmox source; recorded a fresh successful SSH connection after activation. |
 | 2026-09-09 | Hardened SSH, reviewed effective settings and socket activation, and recorded key-login and password-rejection tests. |
