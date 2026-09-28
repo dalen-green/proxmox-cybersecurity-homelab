@@ -1,6 +1,6 @@
 # Cybersecurity Home Lab Roadmap
 
-Last updated: 2026-09-25
+Last updated: 2026-09-28
 
 This roadmap is my learning plan for a first hands-on IT lab. I am starting with Proxmox, networking, and Linux administration, then building toward Windows, identity, monitoring, recovery, and authorized security testing. My goal is to understand and explain each layer before depending on it in a larger project.
 
@@ -39,7 +39,7 @@ Portfolio documentation is tracked separately from technical implementation:
 | `LAB-08` | Kali attack and control validation | **Planned** | **Not started** |
 | `LAB-09` | Vulnerable systems and web applications | **Planned** | **Not started** |
 
-The three existing project folders are LAB-01 through LAB-03. LAB-02's verified scope is its recorded IPv4 setup and one logged SSH denial test. LAB-03 has five of nine core evidence artifacts reviewed, including hardened SSH settings and active UFW policy; the overall baseline remains in progress. Capture dates describe the saved state, not a live system check.
+The three existing project folders are LAB-01 through LAB-03. LAB-02's verified scope is its recorded IPv4 setup and one logged SSH denial test. LAB-03 has six of nine core evidence artifacts reviewed, including hardened SSH settings, active UFW policy, and the running-service inventory and sanitized authentication event in `UBU-E06`. The service/listener/authentication review (`UBU-VAL-06`) is passed; the overall baseline remains in progress. Capture dates describe the saved state, not a live system check.
 
 ## Sequencing and Healthcare Focus
 
@@ -126,7 +126,8 @@ Planned and ongoing work:
 - [x] Capture separate accounts, group membership, and the dated platform/update state.
 - [x] Review SSH settings, configure public-key-only administrative access, and record successful key-login and rejected password tests.
 - [x] Capture active UFW defaults, logging, and SSH restricted to the temporary Proxmox source at `10.10.10.2`.
-- [ ] Complete the full services, listening-port, effective-permission, and authentication-log review.
+- [x] Review running services, all TCP/UDP listeners, and a controlled authentication event (`UBU-VAL-06`); `UBU-E06` contains the service inventory and sanitized SSH event, while the separate listener diagnostic was reviewed during collection.
+- [ ] Complete the remaining group-membership and effective-permission review.
 - [ ] Test allowed management access and blocked independent traffic against the documented UFW policy.
 - [ ] Confirm cleanup of the latest temporary Proxmox management address and tunnel.
 - [ ] Record a repeatable baseline-audit command set or script.
@@ -411,7 +412,9 @@ Healthcare scenarios use synthetic data and fictional workflows only. A simulate
 
 This roadmap will be updated when a milestone changes state. A status changes to **Verified** only after its acceptance criteria have been tested, and a portfolio status changes to **Published** only after the supporting evidence has been sanitized and committed.
 
-The 2026-09-25 documentation audit aligns the overview with five reviewed LAB-03 artifacts. SSH hardening and UFW configuration are recorded as completed steps. Full service/port/log and effective-permission review, independent UFW tests, latest temporary-path cleanup confirmation, and snapshot/rollback validation remain open. Project statuses and the planned LAB-04 through LAB-09 sequence are retained.
+The 2026-09-28 publication-state update aligns the portfolio summaries with the September 26 `UBU-E06` evidence and six reviewed LAB-03 artifacts. The service/listener/authentication review (`UBU-VAL-06`) is passed. Remaining group/effective-permission review, independent UFW tests, latest temporary-path cleanup confirmation, and snapshot/rollback validation remain open. LAB-03 remains **In progress / Drafting**, and the planned LAB-04 through LAB-09 sequence is retained.
+
+The 2026-09-25 documentation audit aligned the overview with the five LAB-03 artifacts reviewed at that time and recorded SSH hardening and UFW configuration as completed steps.
 
 Earlier LAB-03 revisions added the project outline, hardware, platform/update, and account evidence, followed by the hardened SSH record.
 

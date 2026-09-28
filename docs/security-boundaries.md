@@ -1,7 +1,7 @@
 # Security Boundaries
 
 > **Document status:** Living learning notes\
-> **Last updated:** 2026-09-25\
+> **Last updated:** 2026-09-28\
 > **Current work:** Proxmox foundation, OPNsense networking, and the Ubuntu baseline
 
 ## What I am trying to protect
@@ -80,7 +80,7 @@ UFW is Ubuntu's host firewall. The [saved status](../projects/03-ubuntu-server-b
 | Logging | On, low | Selected firewall events can support later checks |
 | Explicit SSH allow | TCP/22 from `10.10.10.2` | The documented management source is permitted; another lab address does not match this rule |
 
-The LAB-03 notes record a successful fresh key-authenticated SSH connection after UFW activation. The published artifact itself shows the policy; independent blocked-traffic evidence has not been collected yet.
+The LAB-03 setup notes record a successful fresh key-authenticated SSH connection after UFW activation. [`UBU-E06`](../projects/03-ubuntu-server-baseline/evidence/06-ubuntu-services-and-auth-log.txt) now also records a September 26 successful public-key login from `10.10.10.2`; independent blocked-traffic evidence has not been collected yet.
 
 This distinction matters for the next test. A second lab VM should not automatically be able to SSH into Ubuntu under the current rule. I need to record a successful connection from the allowed management source and blocked activity from an independent unauthorized source. A temporary test listener can help show that UFW blocked a connection to a service that really was listening. Any temporary rule or service must be documented and removed afterward.
 
@@ -102,7 +102,7 @@ Normal Proxmox administration comes from my workstation on the home network. The
 
 For LAN-side access, I have used SSH local forwarding through Proxmox with the temporary `10.10.10.2/24` address on `vmbr1`. Ubuntu sees Proxmox as the source of that connection. This is why its UFW SSH rule uses `10.10.10.2`, even though I type the SSH command on Windows.
 
-The earlier OPNsense setup notes record closing the tunnel and removing that temporary address. Later Ubuntu work uses the path again. The latest evidence does not show whether it was removed after the September 25 session, so cleanup remains something to confirm. I should keep the address out of the permanent bridge configuration and verify removal after each use.
+The earlier OPNsense setup notes record closing the tunnel and removing that temporary address. Later Ubuntu work uses the path again. The latest evidence does not show whether it was removed after the September 26 session, so cleanup remains something to confirm. I should keep the address out of the permanent bridge configuration and verify removal after each use.
 
 A source IP restriction also does not replace authentication. Ubuntu's recorded SSH settings require a public key for the administrative account, deny direct root login, and disable password and keyboard-interactive authentication. Its disabled forwarding settings apply to Ubuntu's SSH server; they do not describe forwarding configured on Proxmox.
 
@@ -116,7 +116,7 @@ No home-router port forwarding is documented for the lab. I use the OPNsense con
 | Ubuntu → OPNsense DHCP/DNS and internet | Recorded IPv4 networking and HTTPS test succeeded | Review narrower outbound policy when exercises need it |
 | Ubuntu → protected upstream test destination | The selected TCP/22 flow was blocked and logged | Expand testing to the required networks and services |
 | Unauthorized lab endpoint → management services | Comprehensive denial is not documented | Complete `SB-06` and `SB-07` |
-| Temporary Proxmox source → Ubuntu SSH | UFW permits `10.10.10.2`; successful login recorded in project notes | Confirm temporary-path cleanup and retain repeatable test evidence |
+| Temporary Proxmox source → Ubuntu SSH | UFW permits `10.10.10.2`; successful public-key login captured in `UBU-E06` | Confirm temporary-path cleanup and retain repeatable test evidence |
 | Another lab VM → Ubuntu | Subject to UFW; independent results are pending | Test denial and correlate it with Ubuntu logs |
 | Internet → lab | No router forwarding documented | An external denial test is not yet published; IPv6 also needs review |
 
@@ -152,6 +152,7 @@ For public documentation, I remove credentials, keys, upstream addresses, hardwa
 
 | Date | Change |
 |---|---|
+| 2026-09-28 | Linked the September 26 SSH authentication evidence and updated the latest session reference; independent UFW denial testing and temporary-path cleanup remain open. |
 | 2026-09-25 | Rewrote the boundaries in a learning-focused voice; aligned SSH/UFW progress, clarified the temporary management path, and corrected the independent UFW test expectation. |
 | 2026-09-07 | Limited the firewall validation claim to the recorded SSH flow while preserving the configured rule's broader protocol/port scope. |
 | 2026-09-03 | Corrected WAN/LAN mapping and distinguished console access from network traffic. |

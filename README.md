@@ -12,9 +12,9 @@ My notes explain what I tried, why I chose a setting, what the evidence shows, a
 |---|---|---|
 | [LAB-01: Proxmox Foundation](projects/01-proxmox-foundation/) | **Verified for its foundation scope / Published** | Installing a hypervisor, choosing update sources, understanding storage, and connecting virtual bridges |
 | [LAB-02: OPNsense Segmentation](projects/02-opnsense-segmentation/) | **Verified for the recorded IPv4 setup and SSH test / Published** | Following a connection, ordering firewall rules, and comparing an endpoint result with a firewall log |
-| [LAB-03: Ubuntu Server Baseline](projects/03-ubuntu-server-baseline/) | **In progress / Drafting** | Accounts, updates, hardened SSH, and active UFW; full service/log review, independent firewall tests, and recovery evidence remain |
+| [LAB-03: Ubuntu Server Baseline](projects/03-ubuntu-server-baseline/) | **In progress / Drafting** | Accounts, updates, hardened SSH, active UFW, and service/listener/authentication review; privilege review, independent firewall tests, cleanup, and recovery evidence remain |
 
-LAB-03 has five of its nine core evidence artifacts reviewed. Its SSH hardening and UFW configuration are recorded; the overall baseline is still unfinished. The evidence reflects its capture dates rather than a live audit of the systems.
+LAB-03 has six of its nine core evidence artifacts reviewed, with `UBU-VAL-06` passed. [`UBU-E06`](projects/03-ubuntu-server-baseline/evidence/06-ubuntu-services-and-auth-log.txt) contains the running-service inventory and a sanitized SSH authentication event; a separate all-listener diagnostic was reviewed during collection. Its SSH hardening and UFW configuration are recorded; the overall baseline is still unfinished. The evidence reflects its capture dates rather than a live audit of the systems.
 
 ## How the lab fits together
 

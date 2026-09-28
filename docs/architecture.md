@@ -1,7 +1,7 @@
 # Lab Architecture
 
 > **Document status:** Living learning notes\
-> **Last updated:** 2026-09-25\
+> **Last updated:** 2026-09-28\
 > **Current work:** Proxmox foundation, OPNsense networking, and the Ubuntu baseline
 
 ## What I am building
@@ -18,7 +18,7 @@ This document describes the setup recorded in the repository. The [security boun
 |---|---|---|
 | [LAB-01: Proxmox](../projects/01-proxmox-foundation/) | The physical host, storage, web management, and two virtual bridges | Independent backup and recovery work is still planned |
 | [LAB-02: OPNsense](../projects/02-opnsense-segmentation/) | IPv4 lab networking and a logged block tested with one SSH connection | Broader protected-network, management-access, and IPv6 checks |
-| [LAB-03: Ubuntu](../projects/03-ubuntu-server-baseline/) | The VM, separate accounts, recorded updates, hardened SSH, and active UFW | Full service/port/log review, independent firewall tests, and snapshot/rollback evidence |
+| [LAB-03: Ubuntu](../projects/03-ubuntu-server-baseline/) | The VM, separate accounts, recorded updates, hardened SSH, active UFW, and service/listener/authentication review (`UBU-VAL-06` passed) | Remaining group/permission review, independent firewall tests, temporary-path cleanup confirmation, and snapshot/rollback evidence |
 | LAB-04 through LAB-09 | Plans in the [roadmap](../ROADMAP.md) | Implementation has not started |
 
 The saved evidence records particular dates. Updating these notes does not mean that I reran the lab or collected a fresh system inventory.
@@ -189,6 +189,7 @@ My main limits are the single host, shared upstream/management bridge, one lab s
 
 | Date | Change |
 |---|---|
+| 2026-09-28 | Aligned LAB-03 status with the September 26 service/listener/authentication review while retaining the remaining privilege, firewall, cleanup, and recovery work. |
 | 2026-09-25 | Rewrote the architecture as first-project learning notes; aligned Ubuntu progress, documented the temporary management path, and separated recorded settings from completed tests. |
 | 2026-09-05 | Updated the planned sequence to put Windows, identity, and Wazuh before the healthcare capstone and authorized assessment labs. |
 | 2026-09-03 | Corrected WAN/LAN adapter mapping and distinguished console administration from network traffic. |
