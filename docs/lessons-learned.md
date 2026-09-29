@@ -1,7 +1,7 @@
 # Lessons Learned
 
 > **Document status:** Living learning notes\
-> **Last updated:** 2026-09-25\
+> **Last updated:** 2026-09-28\
 > **Current work:** Proxmox foundation, OPNsense networking, and the Ubuntu baseline
 
 ## Why I am keeping these notes
@@ -221,7 +221,7 @@ A snapshot would help undo an experiment, but it still depends on the VM's stora
 
 The roadmap includes Windows, Active Directory, Wazuh, a simulated clinical laboratory, Kali, and vulnerable targets. Those are learning goals; the current project folders cover Proxmox, OPNsense, and Ubuntu.
 
-I track the technical state separately from the write-up. Ubuntu can have working SSH and UFW while the overall project is still in progress. I need to update the overview when individual steps are completed without suggesting that the remaining service, firewall, and recovery tests are finished too.
+I track the technical state separately from the write-up. Ubuntu now has recorded SSH and UFW configuration plus a completed service/listener/authentication review (`UBU-VAL-06`), while the overall project is still in progress. I need to update the overview when individual steps are completed without suggesting that the remaining privilege review, independent firewall tests, cleanup, and recovery work are finished too.
 
 ### `LL-22` — Redaction should leave enough detail to explain the result
 
@@ -246,7 +246,7 @@ I am trying to make one understandable change at a time and record why it helped
 
 ## What I still need to practice
 
-- Complete the Ubuntu service, listening-port, group/permission, and authentication-log review.
+- Complete the remaining Ubuntu group-membership and effective-permission review.
 - Test UFW from an independent lab endpoint using the current source restriction.
 - Create and test the Ubuntu snapshot and rollback process.
 - Confirm removal of the latest temporary management address and tunnel.
@@ -257,6 +257,7 @@ I am trying to make one understandable change at a time and record why it helped
 
 | Date | Change |
 |---|---|
+| 2026-09-28 | Updated LAB-03 progress and remaining practice to reflect the September 26 service/listener/authentication review. |
 | 2026-09-25 | Rewrote the lessons as first-person learning notes, kept the original lesson IDs, and added evidence-backed Ubuntu lessons and current limitations. |
 | 2026-09-07 | Added the LAB-02 troubleshooting, temporary-access cleanup, timestamp correlation, and evidence-redaction lessons. |
 | 2026-09-03 | Corrected OPNsense adapter mapping and clarified the changing WAN lease. |

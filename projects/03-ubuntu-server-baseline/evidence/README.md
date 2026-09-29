@@ -2,12 +2,12 @@
 
 > **Technical status:** In progress\
 > **Portfolio status:** Drafting — evidence collection in progress\
-> **Evidence captured:** 5 of 9 core artifacts reviewed\
-> **Last reviewed:** 2026-09-25
+> **Evidence captured:** 6 of 9 core artifacts reviewed\
+> **Last reviewed:** 2026-09-26
 
 ## 1. Purpose
 
-I am collecting this evidence so I can explain the [Ubuntu baseline](../README.md) using saved results. Five core artifacts are reviewed so far, and four still need to be collected. The existing files describe their capture dates; revising this index does not rerun the checks.
+I am collecting this evidence so I can explain the [Ubuntu baseline](../README.md) using saved results. Six core artifacts are reviewed so far, and three still need to be collected. The existing files describe their capture dates; revising this index does not rerun the checks.
 
 I am learning to distinguish:
 
@@ -37,7 +37,7 @@ These artifacts validate network participation and the routed firewall path. The
 | `UBU-E03` | [`03-ubuntu-account-separation.txt`](03-ubuntu-account-separation.txt) | **Captured — reviewed** | Separate interactive administrative and standard accounts use Bash shells, with only the administrative role holding sudo-group membership |
 | `UBU-E04` | [`04-ubuntu-services-and-ssh.txt`](04-ubuntu-services-and-ssh.txt) | **Captured — reviewed** | Valid OpenSSH syntax, socket activation, TCP/22 listeners, and hardened effective settings; separate setup notes record key-login and password-rejection tests, whose client screenshots are not published |
 | `UBU-E05` | [`05-ubuntu-ufw-status.txt`](05-ubuntu-ufw-status.txt) | **Captured — reviewed** | Active UFW state, low-volume logging, default-deny inbound policy, allowed outbound traffic, disabled routed traffic, and SSH limited to `10.10.10.2` |
-| `UBU-E06` | `06-ubuntu-services-and-auth-log.txt` | **Needed** | Reviewed running services, all TCP/UDP listening sockets, and a short, timestamped authentication-log excerpt from a controlled event |
+| `UBU-E06` | [`06-ubuntu-services-and-auth-log.txt`](06-ubuntu-services-and-auth-log.txt) | **Captured — reviewed** | Timestamped running-service inventory and a sanitized successful public-key SSH event from the authorized `10.10.10.2` management source; a separate all-listener diagnostic was reviewed during collection |
 | `UBU-E07` | `07-ubuntu-ufw-independent-test.txt` | **Needed** | A fresh connection from the allowed management source succeeds, while an independent unauthorized source is blocked with matching UFW evidence; a temporary unapproved listener makes the port-denial test meaningful |
 | `UBU-E08` | `08-proxmox-ubuntu-snapshot.png` | **Needed** | A clearly labeled clean Ubuntu snapshot exists in Proxmox |
 | `UBU-E09` | `09-ubuntu-rollback-validation.txt` | **Needed** | A controlled post-snapshot change disappears after rollback and expected network, SSH, and UFW health checks still pass |
@@ -176,23 +176,19 @@ The first command creates the timestamped evidence file. The second appends the 
 
 ### `UBU-E06` — Running services and authentication log
 
-After one controlled successful SSH login from the authorized administrative workstation, run:
+The final artifact was created with three short commands after one controlled successful SSH login:
 
 ```bash
-{
-  date -u +'%Y-%m-%dT%H:%M:%SZ'
-  printf '%s\n' 'Running services:'
-  systemctl --no-pager --type=service --state=running
-  printf '\n%s\n' 'TCP and UDP listening sockets:'
-  sudo ss -lntup
-  printf '\n%s\n' 'Recent SSH events:'
-  sudo journalctl -u ssh --since '-30 minutes' --no-pager | tail -n 50
-} 2>&1 | tee ~/06-ubuntu-services-and-auth-log.txt
+date -u | tee ~/06-ubuntu-services-and-auth-log.txt
+systemctl --type=service --state=running --no-pager | tee -a ~/06-ubuntu-services-and-auth-log.txt
+sudo journalctl -u ssh --no-pager | grep 'Accepted publickey' | tail -n 1 | tee -a ~/06-ubuntu-services-and-auth-log.txt
 ```
 
-The socket output and log excerpt must be reviewed for protected addresses, usernames, hostnames, and unrelated events before publication. Retain the bind scope, ports, protocols, timestamps, service names, authentication result, and event meaning. Review the sockets against the running services instead of assuming every listener is expected.
+A separate `sudo ss -lntup` diagnostic was reviewed during collection. It showed SSH as the only remotely listening server service. DNS and chrony listeners were loopback-only, and the DHCP client listener was expected on `ens18`. Optional-looking units such as ModemManager, multipathd, udisks2, and upower did not expose listening network ports, so none was disabled solely because of its name.
 
-> **Draft caption:** Sanitized Ubuntu baseline showing running services, TCP/UDP listening sockets, and a timestamped SSH authentication event from an authorized administrative session.
+The publication copy replaces the hostname, account name, process ID, ephemeral source port, and public-key fingerprint. It retains the lab-only source `10.10.10.2` because that address correlates the successful authentication event with the source-restricted UFW rule in UBU-E05.
+
+> **Caption:** Timestamped Ubuntu inventory of 20 running service units and a sanitized SSH log event showing successful Ed25519 public-key authentication for the administrative role from the authorized `10.10.10.2` management source. Unique host, account, process, port, and key identifiers are redacted.
 
 ### `UBU-E07` — Independent UFW validation
 
@@ -259,9 +255,10 @@ Redaction must cover each protected value completely without hiding the surround
 - [x] Effective SSH settings, runtime state, and listening sockets have been reviewed.
 - [x] Active UFW configuration, defaults, logging, and the scoped SSH rule have been reviewed.
 - [ ] A fresh allowed management connection and independent UFW denial tests have been documented against the actual source-specific policy.
-- [ ] The full listening-port and effective-permission review is documented; the current socket artifact covers SSH.
+- [x] Running services and all TCP/UDP listeners have been reviewed against one another.
+- [ ] Effective-permission review beyond the captured sudo-group membership is complete.
 - [ ] Cleanup of temporary test services/rules and the latest temporary management path has been confirmed.
-- [ ] Authentication evidence is short, relevant, timestamped, and sanitized.
+- [x] Authentication evidence is short, relevant, timestamped, and sanitized.
 - [ ] Snapshot existence and successful rollback are supported by different evidence.
 - [ ] No artifact contains credentials, keys, password hashes, protected addresses, MAC addresses, or unique machine identifiers.
 - [ ] The project does not call a snapshot an independent backup.
