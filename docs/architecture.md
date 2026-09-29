@@ -1,7 +1,7 @@
 # Lab Architecture
 
 > **Document status:** Living learning notes\
-> **Last updated:** 2026-09-28\
+> **Last updated:** 2026-09-29\
 > **Current work:** Proxmox foundation, OPNsense networking, and the Ubuntu baseline
 
 ## What I am building
@@ -18,7 +18,7 @@ This document describes the setup recorded in the repository. The [security boun
 |---|---|---|
 | [LAB-01: Proxmox](../projects/01-proxmox-foundation/) | The physical host, storage, web management, and two virtual bridges | Independent backup and recovery work is still planned |
 | [LAB-02: OPNsense](../projects/02-opnsense-segmentation/) | IPv4 lab networking and a logged block tested with one SSH connection | Broader protected-network, management-access, and IPv6 checks |
-| [LAB-03: Ubuntu](../projects/03-ubuntu-server-baseline/) | The VM, separate accounts, recorded updates, hardened SSH, active UFW, and service/listener/authentication review (`UBU-VAL-06` passed) | Remaining group/permission review, independent firewall tests, temporary-path cleanup confirmation, and snapshot/rollback evidence |
+| [LAB-03: Ubuntu](../projects/03-ubuntu-server-baseline/) | Verified documented IPv4 baseline: separate sudo roles, recorded updates, hardened SSH, service/listener review, source-specific UFW test, and controlled snapshot rollback | IPv6 validation, host-restart testing, repeatable audit scripting, and independent backup restoration remain future improvements |
 | LAB-04 through LAB-09 | Plans in the [roadmap](../ROADMAP.md) | Implementation has not started |
 
 The saved evidence records particular dates. Updating these notes does not mean that I reran the lab or collected a fresh system inventory.
@@ -87,7 +87,7 @@ Two VMs on the same `vmbr1` subnet can communicate directly through that bridge.
 
 For temporary LAN access, I used the runtime address `10.10.10.2/24` on Proxmox's `vmbr1`. This lets Proxmox open a connection to the lab-side destination on behalf of the workstation. That connection stays on the lab subnet and does not pass through OPNsense's routed LAN-to-WAN rules.
 
-The LAB-02 notes record removal of the earlier temporary address and tunnel. Later LAB-03 work uses that management source again, and the September 25 UFW evidence permits SSH from `10.10.10.2`. The latest evidence does not include a new cleanup check. I therefore cannot describe the temporary address as currently absent based on the earlier cleanup alone.
+The LAB-02 notes record removal of the earlier temporary address and tunnel. LAB-03 later reused that management source because the UFW rule permits SSH only from `10.10.10.2`. After the final LAB-03 transfer, I stopped the tunnel, removed `10.10.10.2/24` from `vmbr1`, and confirmed that an IPv4 address query returned no result. The address remains a deliberate runtime exception rather than part of the permanent bridge configuration.
 
 This also explains why Ubuntu can receive an administrative SSH connection even though the LAB-02 test blocked an SSH connection going from Ubuntu toward a protected upstream destination. The source, destination, direction, and path are different.
 
@@ -180,15 +180,16 @@ OPNsense needs to start before guests that depend on its network services. Earli
 | `ARC-VAL-06`: The controlled blocked flow reaches OPNsense | Supported by the timestamped SSH timeout and matching firewall log |
 | `ARC-VAL-07`: IPv6 cannot bypass the intended boundary | Not yet tested |
 | `ARC-VAL-08`: Startup order works after a host restart | Not yet demonstrated |
-| `ARC-VAL-09`: Ubuntu returns to a clean snapshot state | Not yet tested |
+| `ARC-VAL-09`: Ubuntu returns to a clean snapshot state | Passed for the recorded marker, IPv4 network, SSH, and UFW checks in `UBU-E08`/`UBU-E09` |
 | `ARC-VAL-10`: An independent backup can be restored | Planned |
 
-My main limits are the single host, shared upstream/management bridge, one lab subnet, and local storage. OPNsense cannot protect the guests from a compromised hypervisor, and it does not inspect ordinary traffic between guests on the same subnet. Centralized monitoring and independent recovery are still planned.
+My main limits are the single host, shared upstream/management bridge, one lab subnet, and local storage. OPNsense cannot protect the guests from a compromised hypervisor, and it does not inspect ordinary traffic between guests on the same subnet. Centralized monitoring and an independent backup/restore path are still planned.
 
 ## Change log
 
 | Date | Change |
 |---|---|
+| 2026-09-29 | Recorded LAB-03 temporary-path cleanup and successful rollback to the labeled Ubuntu baseline snapshot. |
 | 2026-09-28 | Aligned LAB-03 status with the September 26 service/listener/authentication review while retaining the remaining privilege, firewall, cleanup, and recovery work. |
 | 2026-09-25 | Rewrote the architecture as first-project learning notes; aligned Ubuntu progress, documented the temporary management path, and separated recorded settings from completed tests. |
 | 2026-09-05 | Updated the planned sequence to put Windows, identity, and Wazuh before the healthcare capstone and authorized assessment labs. |

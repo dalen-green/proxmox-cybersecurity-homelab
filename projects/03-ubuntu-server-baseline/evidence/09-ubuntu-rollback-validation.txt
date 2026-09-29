@@ -1,0 +1,13 @@
+Tue Sep 29 04:29:46 PM UTC 2026
+Post-snapshot marker: absent (PASS)
+ens18            UP             10.10.10.149/24 metric 100
+default via 10.10.10.1 dev ens18 proto dhcp src 10.10.10.149 metric 100
+SSH service: active
+Status: active
+Logging: on (low)
+Default: deny (incoming), allow (outgoing), disabled (routed)
+New profiles: skip
+
+To                         Action      From
+--                         ------      ----
+22/tcp                     ALLOW IN    10.10.10.2

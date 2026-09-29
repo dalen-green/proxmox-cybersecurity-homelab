@@ -1,6 +1,6 @@
 # Cybersecurity Home Lab Roadmap
 
-Last updated: 2026-09-28
+Last updated: 2026-09-29
 
 This roadmap is my learning plan for a first hands-on IT lab. I am starting with Proxmox, networking, and Linux administration, then building toward Windows, identity, monitoring, recovery, and authorized security testing. My goal is to understand and explain each layer before depending on it in a larger project.
 
@@ -22,6 +22,7 @@ Portfolio documentation is tracked separately from technical implementation:
 | Portfolio status | Meaning |
 |---|---|
 | **Published** | Sanitized documentation and evidence are available in this repository. |
+| **Review ready** | The sanitized project and evidence are complete on a branch and awaiting publication review or merge. |
 | **Drafting** | Evidence exists, but the project write-up is not yet complete. |
 | **Not started** | No public project write-up has been created. |
 
@@ -31,7 +32,7 @@ Portfolio documentation is tracked separately from technical implementation:
 |---|---|---|---|
 | `LAB-01` | Proxmox foundation | **Verified** | **Published** |
 | `LAB-02` | OPNsense network segmentation | **Verified for IPv4** | **Published** |
-| `LAB-03` | Ubuntu Server security baseline | **In progress** | **Drafting** |
+| `LAB-03` | Ubuntu Server security baseline | **Verified for documented IPv4 baseline** | **Published** |
 | `LAB-04` | Windows 11 endpoint security | **Planned** | **Not started** |
 | `LAB-05` | Windows Server and Active Directory | **Planned** | **Not started** |
 | `LAB-06` | Wazuh monitoring and detection | **Planned** | **Not started** |
@@ -39,7 +40,7 @@ Portfolio documentation is tracked separately from technical implementation:
 | `LAB-08` | Kali attack and control validation | **Planned** | **Not started** |
 | `LAB-09` | Vulnerable systems and web applications | **Planned** | **Not started** |
 
-The three existing project folders are LAB-01 through LAB-03. LAB-02's verified scope is its recorded IPv4 setup and one logged SSH denial test. LAB-03 has six of nine core evidence artifacts reviewed, including hardened SSH settings, active UFW policy, and the running-service inventory and sanitized authentication event in `UBU-E06`. The service/listener/authentication review (`UBU-VAL-06`) is passed; the overall baseline remains in progress. Capture dates describe the saved state, not a live system check.
+The three existing project folders are LAB-01 through LAB-03. LAB-02's verified scope is its recorded IPv4 setup and one logged SSH denial test. LAB-03 now has nine of nine core evidence artifacts reviewed. Its documented IPv4 baseline includes account and sudo-role separation, recorded update state, hardened SSH, service/listener review, source-specific UFW testing, temporary-path cleanup, and a controlled snapshot rollback. Capture dates describe saved states, not a live or continuous system audit.
 
 ## Sequencing and Healthcare Focus
 
@@ -117,7 +118,7 @@ Published evidence: [LAB-02 evidence pack](projects/02-opnsense-segmentation/evi
 
 **Objective:** Deploy and harden a Linux server while documenting its users, services, exposed ports, firewall policy, and logs.
 
-Planned and ongoing work:
+Completed baseline work:
 
 - [x] Install Ubuntu Server on the isolated network.
 - [x] Create administrative and standard user accounts.
@@ -127,23 +128,30 @@ Planned and ongoing work:
 - [x] Review SSH settings, configure public-key-only administrative access, and record successful key-login and rejected password tests.
 - [x] Capture active UFW defaults, logging, and SSH restricted to the temporary Proxmox source at `10.10.10.2`.
 - [x] Review running services, all TCP/UDP listeners, and a controlled authentication event (`UBU-VAL-06`); `UBU-E06` contains the service inventory and sanitized SSH event, while the separate listener diagnostic was reviewed during collection.
-- [ ] Complete the remaining group-membership and effective-permission review.
-- [ ] Test allowed management access and blocked independent traffic against the documented UFW policy.
-- [ ] Confirm cleanup of the latest temporary Proxmox management address and tunnel.
-- [ ] Record a repeatable baseline-audit command set or script.
-- [ ] Create and label a clean Proxmox snapshot.
-- [ ] Test one controlled change and rollback.
+- [x] Complete the intended local group-membership and sudo-authorization review; remove unused `lxd` membership and confirm the standard role cannot use sudo.
+- [x] Test allowed management access and blocked independent IPv4 TCP/22 traffic against the documented UFW source restriction (`UBU-VAL-07`).
+- [x] Confirm cleanup of the latest temporary Proxmox management address and tunnel after evidence transfer.
+- [x] Create and label the `ubuntu-baseline-2026-09-29` Proxmox snapshot.
+- [x] Create a controlled post-snapshot marker, roll back, and verify the marker's removal plus restored network, SSH, and UFW state (`UBU-VAL-08`).
 
 Acceptance criteria:
 
 - Administrative tasks require deliberate privilege elevation.
 - Only expected services and ports are exposed.
-- UFW policy is documented, with a successful connection from the allowed management source and denied traffic from an independent lab endpoint; temporary test services or rules are removed.
+- UFW policy is documented, with a successful connection from the allowed management source and denied traffic from an independent lab endpoint against the same confirmed SSH listener; no extra test service or rule was required.
 - Relevant authentication and service events can be located in system logs.
 - The clean baseline can be restored successfully.
 
-Progress write-up: [`projects/03-ubuntu-server-baseline/`](projects/03-ubuntu-server-baseline/)  
-Progress evidence: [`projects/03-ubuntu-server-baseline/evidence/`](projects/03-ubuntu-server-baseline/evidence/)
+Published write-up: [`projects/03-ubuntu-server-baseline/`](projects/03-ubuntu-server-baseline/)
+
+Published evidence: [`projects/03-ubuntu-server-baseline/evidence/`](projects/03-ubuntu-server-baseline/evidence/)
+
+Future improvements outside the completed baseline scope:
+
+- [ ] Turn the individual evidence checks into a repeatable audit script.
+- [ ] Validate or deliberately disable unused IPv6 paths.
+- [ ] Test startup order and service recovery after a full Proxmox host restart.
+- [ ] Create an independent backup on separate storage and perform a restore test.
 
 ---
 
@@ -373,10 +381,8 @@ A milestone is marked **Published** only after its project folder contains:
 
 ### Now
 
-1. Finish `LAB-03`, including the Ubuntu baseline review and snapshot validation.
-2. Publish sanitized documentation for `LAB-03`.
-3. Complete the remaining protected-network, management-access, and IPv6 isolation review before authorized attack or vulnerability testing.
-4. Optionally begin the `LAB-07` charter, fictional workflow, proposed architecture, roles, access matrix, and initial risk register without adding VMs or claiming implementation.
+1. Complete the remaining protected-network, management-access, and IPv6 isolation review before authorized attack or vulnerability testing.
+2. Optionally begin the `LAB-07` charter, fictional workflow, proposed architecture, roles, access matrix, and initial risk register without adding VMs or claiming implementation.
 
 ### Next
 
@@ -412,7 +418,9 @@ Healthcare scenarios use synthetic data and fictional workflows only. A simulate
 
 This roadmap will be updated when a milestone changes state. A status changes to **Verified** only after its acceptance criteria have been tested, and a portfolio status changes to **Published** only after the supporting evidence has been sanitized and committed.
 
-The 2026-09-28 publication-state update aligns the portfolio summaries with the September 26 `UBU-E06` evidence and six reviewed LAB-03 artifacts. The service/listener/authentication review (`UBU-VAL-06`) is passed. Remaining group/effective-permission review, independent UFW tests, latest temporary-path cleanup confirmation, and snapshot/rollback validation remain open. LAB-03 remains **In progress / Drafting**, and the planned LAB-04 through LAB-09 sequence is retained.
+The 2026-09-29 completion update publishes nine of nine reviewed LAB-03 core artifacts. It closes the intended sudo-role review, independent IPv4 UFW test, temporary management-path cleanup, labeled snapshot, and controlled rollback while keeping IPv6, independent backup restoration, host-restart testing, and continuous compliance outside the verified scope.
+
+The 2026-09-28 publication-state update aligned the portfolio summaries with the September 26 `UBU-E06` evidence and six reviewed LAB-03 artifacts. At that point, the service/listener/authentication review (`UBU-VAL-06`) had passed while group/effective-permission review, independent UFW tests, cleanup confirmation, and snapshot/rollback validation were still open. LAB-03 was therefore kept **In progress / Drafting** at that stage.
 
 The 2026-09-25 documentation audit aligned the overview with the five LAB-03 artifacts reviewed at that time and recorded SSH hardening and UFW configuration as completed steps.
 

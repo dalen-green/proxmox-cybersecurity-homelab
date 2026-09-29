@@ -1,7 +1,7 @@
 # Security Boundaries
 
 > **Document status:** Living learning notes\
-> **Last updated:** 2026-09-28\
+> **Last updated:** 2026-09-29\
 > **Current work:** Proxmox foundation, OPNsense networking, and the Ubuntu baseline
 
 ## What I am trying to protect
@@ -45,8 +45,8 @@ I use **configuration reviewed** for a saved setting and **tested** for an obser
 | `SB-07`: Restricted Proxmox and OPNsense management access | Required before vulnerable targets | Test unauthorized access from `vmbr1` and document deliberate administrative exceptions |
 | `SB-08`: IPv6 boundary | Required before vulnerable targets | Review enabled IPv6 paths and test equivalent restrictions or a deliberate disabled configuration |
 | `SB-09`: No unsolicited internet access to the lab | Documented configuration; external test pending | Setup notes record no home-router port forwarding; I have no published external denial test |
-| `SB-10`: Ubuntu UFW | Active configuration reviewed; independent testing pending | September 25 output shows default-deny inbound policy and SSH allowed from `10.10.10.2` |
-| `SB-11`: Tested clean recovery point | Planned | Ubuntu snapshot and rollback artifacts are still missing |
+| `SB-10`: Ubuntu UFW | Tested for the recorded IPv4 TCP/22 sources | Configuration permits `10.10.10.2`; logs show an accepted login from that source and blocked SYN packets from `10.10.10.1` |
+| `SB-11`: Tested clean recovery point | Tested for one controlled marker | Snapshot view, pre-change marker checksum, and post-rollback network/SSH/UFW checks |
 | `SB-12`: Centralized monitoring | Planned | Wazuh belongs to a later project |
 
 The evidence is linked from the [Proxmox](../projects/01-proxmox-foundation/evidence/), [OPNsense](../projects/02-opnsense-segmentation/evidence/), and [Ubuntu](../projects/03-ubuntu-server-baseline/evidence/) evidence indexes. These are records of the captured state, not a live security assessment.
@@ -80,9 +80,9 @@ UFW is Ubuntu's host firewall. The [saved status](../projects/03-ubuntu-server-b
 | Logging | On, low | Selected firewall events can support later checks |
 | Explicit SSH allow | TCP/22 from `10.10.10.2` | The documented management source is permitted; another lab address does not match this rule |
 
-The LAB-03 setup notes record a successful fresh key-authenticated SSH connection after UFW activation. [`UBU-E06`](../projects/03-ubuntu-server-baseline/evidence/06-ubuntu-services-and-auth-log.txt) now also records a September 26 successful public-key login from `10.10.10.2`; independent blocked-traffic evidence has not been collected yet.
+The LAB-03 setup notes and [`UBU-E06`](../projects/03-ubuntu-server-baseline/evidence/06-ubuntu-services-and-auth-log.txt) record successful key-authenticated SSH from `10.10.10.2`. [`UBU-E07`](../projects/03-ubuntu-server-baseline/evidence/07-ubuntu-ufw-independent-test.txt) adds the source comparison: a permitted public-key login from `10.10.10.2` and UFW-blocked IPv4 TCP/22 SYN packets from the OPNsense LAN endpoint at `10.10.10.1`.
 
-This distinction matters for the next test. A second lab VM should not automatically be able to SSH into Ubuntu under the current rule. I need to record a successful connection from the allowed management source and blocked activity from an independent unauthorized source. A temporary test listener can help show that UFW blocked a connection to a service that really was listening. Any temporary rule or service must be documented and removed afterward.
+Both checks targeted the same confirmed SSH listener. That made the different result attributable to the source-specific rule without adding a temporary service or firewall exception. The repeated block entries are TCP SYN retransmissions while the independent client waited for a response.
 
 The [Ubuntu firewall documentation](https://ubuntu.com/server/docs/how-to/security/firewalls/) explains how source-specific rules work. I still need to review IPv6 behavior separately: the SSH artifact includes an IPv6 listener, and the IPv4 UFW allow rule does not prove IPv6 isolation.
 
@@ -102,7 +102,7 @@ Normal Proxmox administration comes from my workstation on the home network. The
 
 For LAN-side access, I have used SSH local forwarding through Proxmox with the temporary `10.10.10.2/24` address on `vmbr1`. Ubuntu sees Proxmox as the source of that connection. This is why its UFW SSH rule uses `10.10.10.2`, even though I type the SSH command on Windows.
 
-The earlier OPNsense setup notes record closing the tunnel and removing that temporary address. Later Ubuntu work uses the path again. The latest evidence does not show whether it was removed after the September 26 session, so cleanup remains something to confirm. I should keep the address out of the permanent bridge configuration and verify removal after each use.
+The earlier OPNsense setup notes record closing the tunnel and removing that temporary address. LAB-03 later reused the path. After the final evidence transfer, I stopped the tunnel, removed `10.10.10.2/24` from `vmbr1`, and confirmed that a follow-up IPv4 query displayed no address. I will continue to keep the address out of permanent bridge configuration and verify removal after every future use.
 
 A source IP restriction also does not replace authentication. Ubuntu's recorded SSH settings require a public key for the administrative account, deny direct root login, and disable password and keyboard-interactive authentication. Its disabled forwarding settings apply to Ubuntu's SSH server; they do not describe forwarding configured on Proxmox.
 
@@ -116,8 +116,8 @@ No home-router port forwarding is documented for the lab. I use the OPNsense con
 | Ubuntu → OPNsense DHCP/DNS and internet | Recorded IPv4 networking and HTTPS test succeeded | Review narrower outbound policy when exercises need it |
 | Ubuntu → protected upstream test destination | The selected TCP/22 flow was blocked and logged | Expand testing to the required networks and services |
 | Unauthorized lab endpoint → management services | Comprehensive denial is not documented | Complete `SB-06` and `SB-07` |
-| Temporary Proxmox source → Ubuntu SSH | UFW permits `10.10.10.2`; successful public-key login captured in `UBU-E06` | Confirm temporary-path cleanup and retain repeatable test evidence |
-| Another lab VM → Ubuntu | Subject to UFW; independent results are pending | Test denial and correlate it with Ubuntu logs |
+| Temporary Proxmox source → Ubuntu SSH | UFW permits `10.10.10.2`; successful public-key login captured and latest runtime path removed after use | Retain the source restriction and repeat the cleanup check whenever the path is re-enabled |
+| Independent `vmbr1` source → Ubuntu TCP/22 | UFW block entries captured for source `10.10.10.1` while the same service accepted the permitted source | Repeat for future services or policies rather than generalizing one TCP/22 test |
 | Internet → lab | No router forwarding documented | An external denial test is not yet published; IPv6 also needs review |
 
 NAT changes addresses for routed connections; it is not a substitute for a reviewed firewall policy. Likewise, assigning a private address does not by itself make a system inaccessible to other devices that have a route to it.
@@ -133,8 +133,8 @@ NAT changes addresses for routed connections; it is not a substitute for a revie
 | `VAL-05`: Multiple protocols to protected networks | Not yet performed |
 | `VAL-06`: Unauthorized management access | Not yet comprehensively tested |
 | `VAL-07`: IPv6 behavior | Not yet tested |
-| `VAL-08`: Independent UFW testing | Pending an independent endpoint and a test plan matching the source restriction |
-| `VAL-09`: Ubuntu snapshot recovery | Not yet performed |
+| `VAL-08`: Independent UFW testing | Passed for the recorded IPv4 TCP/22 source comparison |
+| `VAL-09`: Ubuntu snapshot recovery | Passed for one post-snapshot marker plus restored IPv4 network, SSH, and UFW state |
 
 Before adding deliberately vulnerable targets, I plan to complete `SB-06`, `SB-07`, and `SB-08`, retain a private OPNsense configuration backup, and establish tested recovery points. I will keep targets off `vmbr0`, define the authorized source and destination before each exercise, limit unnecessary outbound access, and power targets off when they are not needed. Vulnerable applications will run inside disposable VMs. Unknown malware, ransomware deployment, and attacks on the host or third-party systems are outside this lab's scope.
 
@@ -144,7 +144,7 @@ Everything runs on one physical host. Losing the host or its storage could stop 
 
 The lab currently has one internal subnet. It does not yet have separate user, server, monitoring, or vulnerable-target networks. Host firewalls help, and additional segmentation may become useful as the exercises grow.
 
-Centralized monitoring, independent backups, and recovery tests remain planned. The existing logs and successful connection tests are useful evidence, but they do not establish a complete security baseline.
+Centralized monitoring and independent backups remain planned. The Ubuntu snapshot rollback now demonstrates one local recovery path, but it does not protect against loss of the Proxmox storage or establish an independent restore capability.
 
 For public documentation, I remove credentials, keys, upstream addresses, hardware identifiers, and unrelated personal information while retaining the lab addresses and fields needed to explain a test. Future healthcare exercises will use synthetic data and fictional workflows.
 
@@ -152,6 +152,7 @@ For public documentation, I remove credentials, keys, upstream addresses, hardwa
 
 | Date | Change |
 |---|---|
+| 2026-09-29 | Recorded the allowed-versus-blocked Ubuntu UFW test, latest temporary-path cleanup, and controlled snapshot rollback while retaining IPv6 and independent-backup limits. |
 | 2026-09-28 | Linked the September 26 SSH authentication evidence and updated the latest session reference; independent UFW denial testing and temporary-path cleanup remain open. |
 | 2026-09-25 | Rewrote the boundaries in a learning-focused voice; aligned SSH/UFW progress, clarified the temporary management path, and corrected the independent UFW test expectation. |
 | 2026-09-07 | Limited the firewall validation claim to the recorded SSH flow while preserving the configured rule's broader protocol/port scope. |
