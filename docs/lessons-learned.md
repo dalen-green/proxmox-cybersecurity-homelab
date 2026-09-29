@@ -1,7 +1,7 @@
 # Lessons Learned
 
 > **Document status:** Living learning notes\
-> **Last updated:** 2026-09-28\
+> **Last updated:** 2026-09-29\
 > **Current work:** Proxmox foundation, OPNsense networking, and the Ubuntu baseline
 
 ## Why I am keeping these notes
@@ -155,11 +155,11 @@ I checked the current DHCP address, rule order, applied state, and logging, then
 
 ### `LL-20` — Temporary access needs a cleanup check every time
 
-**Recorded result: LAB-02 cleanup recorded; latest LAB-03 cleanup not evidenced.**
+**Recorded result: LAB-02 and latest LAB-03 cleanup checks completed.**
 
 My workstation was upstream, while the OPNsense web interface was on the lab side. I used a temporary `10.10.10.2/24` address on Proxmox's `vmbr1` and an SSH tunnel to reach it. The earlier setup record includes closing the tunnel, removing the address, and checking that the runtime IPv4 address was gone.
 
-Later Ubuntu administration uses the same source again, and UFW now permits SSH from it. The earlier removal does not prove it was removed after the later session. I need a fresh cleanup check after each use and should keep the temporary address out of permanent bridge configuration.
+Later Ubuntu administration used the same source again because UFW permits SSH from it. After the final LAB-03 evidence transfer, I stopped the tunnel, removed `10.10.10.2/24`, and confirmed that `vmbr1` displayed no IPv4 address. The important lesson is that each temporary session needs its own cleanup check; an earlier successful removal cannot prove a later runtime state.
 
 ### `LL-21` — Timestamps help connect events across systems
 
@@ -189,31 +189,31 @@ The final [SSH artifact](../projects/03-ubuntu-server-baseline/evidence/04-ubunt
 
 ### `LL-24` — UFW and OPNsense protect different parts of the path
 
-**Recorded result: UFW policy captured; independent denial test still needed.**
+**Recorded result: Source-specific IPv4 UFW behavior tested.**
 
 OPNsense handled the earlier connection going from Ubuntu toward an upstream destination. UFW runs on Ubuntu itself, so it can also filter connections from another guest on the same lab subnet.
 
 The [UFW output](../projects/03-ubuntu-server-baseline/evidence/05-ubuntu-ufw-status.txt) shows an active firewall, default-deny incoming policy, and an SSH allow rule for `10.10.10.2`. That is the temporary Proxmox source used for forwarding my workstation connection.
 
-A second lab VM with a different address should not automatically pass that rule. The next test needs an allowed management connection and independent blocked traffic, with logs showing which firewall acted. I have not completed that test yet.
+The [independent UFW artifact](../projects/03-ubuntu-server-baseline/evidence/07-ubuntu-ufw-independent-test.txt) compares two sources against the same SSH listener. Ubuntu accepted a key-authenticated connection from permitted source `10.10.10.2` and logged UFW blocks for TCP/22 from the OPNsense LAN endpoint at `10.10.10.1`. Using one confirmed listening service made the difference easier to attribute to the source-specific UFW rule, so I did not need to create an extra temporary listener.
 
 ### `LL-25` — A baseline records a particular state, including unfinished updates
 
-**Recorded result: Accounts and update state captured; broader review remains.**
+**Recorded result: Intended sudo-role review and final update capture completed.**
 
-I created separate administrative and standard accounts and checked their groups. The recorded standard account is outside the sudo group, while the administrative account belongs to it. This is a useful first privilege check, but group membership alone is not a complete audit of effective permissions.
+I created separate administrative and standard accounts, checked their groups, and reviewed their effective sudo results. The administrative role can deliberately elevate through sudo, while the standard role is explicitly denied. I also removed the administrative account's unused `lxd` membership after confirming LXD was not installed. This validates the intended local sudo separation, but it is not a universal audit of every Linux permission mechanism.
 
-The update record also lists two audit-library packages deferred by Ubuntu's phased rollout, with no reboot required at capture time. I kept that detail instead of saying the system had no pending updates. Those September 8 results describe that capture; a later maintenance check may produce different results.
+The final update record lists `python3-distupgrade` and `ubuntu-release-upgrader-core` as deferred by Ubuntu's phased rollout, with no reboot required at capture time. I kept that detail instead of forcing phased packages merely to make the pending count read zero. The September 29 result is still a point-in-time record; a later maintenance check may differ.
 
 ## Recovery and documentation habits I am developing
 
 ### `LL-16` — A snapshot still depends on the original storage
 
-**Recorded result: Recovery work remains planned.**
+**Recorded result: Snapshot creation and controlled rollback passed.**
 
-I plan to use a Proxmox snapshot before making a controlled change, then test whether rollback restores the expected state. The snapshot and rollback evidence have not been collected yet.
+I created the labeled `ubuntu-baseline-2026-09-29` [snapshot](../projects/03-ubuntu-server-baseline/evidence/08-proxmox-ubuntu-snapshot.png), added a harmless marker afterward, recorded its checksum, and rolled the powered-off VM back. The [post-rollback checks](../projects/03-ubuntu-server-baseline/evidence/09-ubuntu-rollback-validation.txt) show that the marker was absent while DHCP networking, the default route, SSH, and UFW returned to their expected states.
 
-A snapshot would help undo an experiment, but it still depends on the VM's storage. An independent backup needs a separate destination and a restore test. I want to demonstrate both eventually, and I need to avoid using the terms interchangeably.
+The test showed that the snapshot can undo this controlled change, but the snapshot still depends on the VM's original Proxmox storage. An independent backup needs a separate destination and its own restore test. Passing one does not prove the other.
 
 ### `LL-17` — Planned work should stay visibly planned
 
@@ -221,7 +221,7 @@ A snapshot would help undo an experiment, but it still depends on the VM's stora
 
 The roadmap includes Windows, Active Directory, Wazuh, a simulated clinical laboratory, Kali, and vulnerable targets. Those are learning goals; the current project folders cover Proxmox, OPNsense, and Ubuntu.
 
-I track the technical state separately from the write-up. Ubuntu now has recorded SSH and UFW configuration plus a completed service/listener/authentication review (`UBU-VAL-06`), while the overall project is still in progress. I need to update the overview when individual steps are completed without suggesting that the remaining privilege review, independent firewall tests, cleanup, and recovery work are finished too.
+I track the technical state separately from the write-up. Ubuntu now has all nine planned core artifacts reviewed, including source-specific UFW testing and controlled rollback. The completion branch is technically verified for that documented IPv4 scope but remains review ready until publication. IPv6, independent backup restoration, host-restart testing, and continuous compliance remain separate work rather than reasons to understate the completed baseline.
 
 ### `LL-22` — Redaction should leave enough detail to explain the result
 
@@ -246,17 +246,17 @@ I am trying to make one understandable change at a time and record why it helped
 
 ## What I still need to practice
 
-- Complete the remaining Ubuntu group-membership and effective-permission review.
-- Test UFW from an independent lab endpoint using the current source restriction.
-- Create and test the Ubuntu snapshot and rollback process.
-- Confirm removal of the latest temporary management address and tunnel.
+- Turn the individual Ubuntu checks into a repeatable baseline-audit script.
 - Complete the protected-network, management-access, and IPv6 checks before introducing vulnerable targets.
-- Test startup order after a host restart and establish an independent backup/restore process.
+- Test startup order and service recovery after a full host restart.
+- Establish an independent backup on separate storage and perform a restore test.
+- Repeat patch, listener, and firewall reviews over time instead of treating one baseline as permanent.
 
 ## Change log
 
 | Date | Change |
 |---|---|
+| 2026-09-29 | Recorded final LAB-03 sudo-role review, source-specific UFW testing, temporary-access cleanup, and controlled snapshot rollback. |
 | 2026-09-28 | Updated LAB-03 progress and remaining practice to reflect the September 26 service/listener/authentication review. |
 | 2026-09-25 | Rewrote the lessons as first-person learning notes, kept the original lesson IDs, and added evidence-backed Ubuntu lessons and current limitations. |
 | 2026-09-07 | Added the LAB-02 troubleshooting, temporary-access cleanup, timestamp correlation, and evidence-redaction lessons. |

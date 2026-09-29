@@ -1,14 +1,14 @@
-2026-09-08T02:25:37Z
+Tue Sep 29 04:18:31 AM UTC 2026
 Package metadata refresh: successful
-OS: Ubuntu 26.04.1 LTS
-Kernel: 7.0.0-31-generic
+PRETTY_NAME="Ubuntu 26.04.1 LTS"
+Kernel: 7.0.0-34-generic
 Architecture: amd64
 Timezone=Etc/UTC
 NTPSynchronized=yes
-Pending upgrades: 2
-Reboot required: no
-
-Phased-update review: 2026-09-08T02:39:23Z
+Listing...
+python3-distupgrade/resolute-updates 1:26.04.25 all [upgradable from: 1:26.04.23]
+ubuntu-release-upgrader-core/resolute-updates 1:26.04.25 all [upgradable from: 1:26.04.23]
 The following upgrades have been deferred due to phasing:
-  libaudit-common libaudit1
+  python3-distupgrade ubuntu-release-upgrader-core
 0 upgraded, 0 newly installed, 0 to remove and 2 not upgraded.
+Reboot required: no

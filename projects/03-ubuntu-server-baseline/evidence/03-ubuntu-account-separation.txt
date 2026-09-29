@@ -1,11 +1,9 @@
-2026-09-08T02:59:47Z
-Interactive local accounts:
+Tue Sep 29 04:35:15 AM UTC 2026
 admin_username uid=1000 shell=/bin/bash
 standard_username uid=1001 shell=/bin/bash
-
-Account identities and group memberships:
-uid=1000(admin_username) gid=1000(admin_username) groups=1000(admin_username),4(adm),24(cdrom),27(sudo),30(dip),46(plugdev),100(users),101(lxd)
+uid=1000(admin_username) gid=1000(admin_username) groups=1000(admin_username),4(adm),24(cdrom),27(sudo),30(dip),46(plugdev),100(users)
 uid=1001(standard_username) gid=1001(standard_username) groups=1001(standard_username),100(users)
-
-Sudo group membership:
 sudo:x:27:admin_username
+User admin_username may run the following commands on server_hostname:
+    (ALL : ALL) ALL
+User standard_username is not allowed to run sudo on server_hostname.
