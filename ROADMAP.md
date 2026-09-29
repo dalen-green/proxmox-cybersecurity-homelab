@@ -32,7 +32,7 @@ Portfolio documentation is tracked separately from technical implementation:
 |---|---|---|---|
 | `LAB-01` | Proxmox foundation | **Verified** | **Published** |
 | `LAB-02` | OPNsense network segmentation | **Verified for IPv4** | **Published** |
-| `LAB-03` | Ubuntu Server security baseline | **Verified for documented IPv4 baseline** | **Review ready** |
+| `LAB-03` | Ubuntu Server security baseline | **Verified for documented IPv4 baseline** | **Published** |
 | `LAB-04` | Windows 11 endpoint security | **Planned** | **Not started** |
 | `LAB-05` | Windows Server and Active Directory | **Planned** | **Not started** |
 | `LAB-06` | Wazuh monitoring and detection | **Planned** | **Not started** |
@@ -142,9 +142,9 @@ Acceptance criteria:
 - Relevant authentication and service events can be located in system logs.
 - The clean baseline can be restored successfully.
 
-Review-ready write-up: [`projects/03-ubuntu-server-baseline/`](projects/03-ubuntu-server-baseline/)
+Published write-up: [`projects/03-ubuntu-server-baseline/`](projects/03-ubuntu-server-baseline/)
 
-Review-ready evidence: [`projects/03-ubuntu-server-baseline/evidence/`](projects/03-ubuntu-server-baseline/evidence/)
+Published evidence: [`projects/03-ubuntu-server-baseline/evidence/`](projects/03-ubuntu-server-baseline/evidence/)
 
 Future improvements outside the completed baseline scope:
 
@@ -381,9 +381,8 @@ A milestone is marked **Published** only after its project folder contains:
 
 ### Now
 
-1. Review and publish the completed, sanitized `LAB-03` branch.
-2. Complete the remaining protected-network, management-access, and IPv6 isolation review before authorized attack or vulnerability testing.
-3. Optionally begin the `LAB-07` charter, fictional workflow, proposed architecture, roles, access matrix, and initial risk register without adding VMs or claiming implementation.
+1. Complete the remaining protected-network, management-access, and IPv6 isolation review before authorized attack or vulnerability testing.
+2. Optionally begin the `LAB-07` charter, fictional workflow, proposed architecture, roles, access matrix, and initial risk register without adding VMs or claiming implementation.
 
 ### Next
 
@@ -419,7 +418,7 @@ Healthcare scenarios use synthetic data and fictional workflows only. A simulate
 
 This roadmap will be updated when a milestone changes state. A status changes to **Verified** only after its acceptance criteria have been tested, and a portfolio status changes to **Published** only after the supporting evidence has been sanitized and committed.
 
-The 2026-09-29 completion update records nine of nine reviewed LAB-03 core artifacts. It closes the intended sudo-role review, independent IPv4 UFW test, temporary management-path cleanup, labeled snapshot, and controlled rollback while keeping IPv6, independent backup restoration, host-restart testing, and continuous compliance outside the verified scope. The branch is **Review ready** rather than **Published** until its pull request is merged.
+The 2026-09-29 completion update publishes nine of nine reviewed LAB-03 core artifacts. It closes the intended sudo-role review, independent IPv4 UFW test, temporary management-path cleanup, labeled snapshot, and controlled rollback while keeping IPv6, independent backup restoration, host-restart testing, and continuous compliance outside the verified scope.
 
 The 2026-09-28 publication-state update aligned the portfolio summaries with the September 26 `UBU-E06` evidence and six reviewed LAB-03 artifacts. At that point, the service/listener/authentication review (`UBU-VAL-06`) had passed while group/effective-permission review, independent UFW tests, cleanup confirmation, and snapshot/rollback validation were still open. LAB-03 was therefore kept **In progress / Drafting** at that stage.
 

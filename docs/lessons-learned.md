@@ -221,7 +221,7 @@ The test showed that the snapshot can undo this controlled change, but the snaps
 
 The roadmap includes Windows, Active Directory, Wazuh, a simulated clinical laboratory, Kali, and vulnerable targets. Those are learning goals; the current project folders cover Proxmox, OPNsense, and Ubuntu.
 
-I track the technical state separately from the write-up. Ubuntu now has all nine planned core artifacts reviewed, including source-specific UFW testing and controlled rollback. The completion branch is technically verified for that documented IPv4 scope but remains review ready until publication. IPv6, independent backup restoration, host-restart testing, and continuous compliance remain separate work rather than reasons to understate the completed baseline.
+I track the technical state separately from the write-up. Ubuntu now has all nine planned core artifacts reviewed and published, including source-specific UFW testing and controlled rollback. The project is technically verified for that documented IPv4 scope. IPv6, independent backup restoration, host-restart testing, and continuous compliance remain separate work rather than reasons to understate the completed baseline.
 
 ### `LL-22` — Redaction should leave enough detail to explain the result
 

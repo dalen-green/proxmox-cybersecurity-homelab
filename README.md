@@ -12,7 +12,7 @@ My notes explain what I tried, why I chose a setting, what the evidence shows, a
 |---|---|---|
 | [LAB-01: Proxmox Foundation](projects/01-proxmox-foundation/) | **Verified for its foundation scope / Published** | Installing a hypervisor, choosing update sources, understanding storage, and connecting virtual bridges |
 | [LAB-02: OPNsense Segmentation](projects/02-opnsense-segmentation/) | **Verified for the recorded IPv4 setup and SSH test / Published** | Following a connection, ordering firewall rules, and comparing an endpoint result with a firewall log |
-| [LAB-03: Ubuntu Server Baseline](projects/03-ubuntu-server-baseline/) | **Verified for the documented IPv4 baseline / Review ready** | Account separation, updates, hardened SSH, service review, source-specific UFW testing, and controlled snapshot rollback |
+| [LAB-03: Ubuntu Server Baseline](projects/03-ubuntu-server-baseline/) | **Verified for the documented IPv4 baseline / Published** | Account separation, updates, hardened SSH, service review, source-specific UFW testing, and controlled snapshot rollback |
 
 LAB-03 now has all nine core artifacts reviewed. The final work verifies effective sudo-role separation, compares permitted and blocked IPv4 TCP/22 sources at UFW, confirms cleanup of the temporary management path, and demonstrates a controlled rollback to the labeled Ubuntu snapshot. The scope remains deliberately limited: IPv6, broader management-boundary testing, continuous compliance, and an independent backup restore are not claimed.
 

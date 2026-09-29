@@ -1,7 +1,7 @@
 # Project 03: Ubuntu Server Security Baseline
 
 > **Technical status:** Verified for the documented IPv4 baseline\
-> **Portfolio status:** Review ready; 9 of 9 core evidence artifacts reviewed\
+> **Portfolio status:** Published; 9 of 9 core evidence artifacts reviewed\
 > **Platform:** Ubuntu Server VM on Proxmox VE\
 > **Last reviewed:** 2026-09-29
 
@@ -109,7 +109,7 @@ The Proxmox hardware view shows its NIC firewall checkbox enabled, but I have no
 
 I can explain how I deployed a Linux VM on an isolated virtual network, separated routine and administrative access, maintained its packages, hardened key-based SSH, applied a source-specific host firewall, reviewed active services and listeners, validated an allowed and denied connection, and proved that a controlled snapshot rollback restored the expected state.
 
-The project is **Verified for the documented IPv4 baseline / Review ready**. IPv6, broader management-boundary testing, independent backup restoration, and continuous monitoring remain outside this completed scope.
+The project is **Verified for the documented IPv4 baseline / Published**. IPv6, broader management-boundary testing, independent backup restoration, and continuous monitoring remain outside this completed scope.
 
 ## Related notes
 

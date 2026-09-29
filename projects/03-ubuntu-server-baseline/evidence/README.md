@@ -1,7 +1,7 @@
 # LAB-03 Evidence Pack
 
 > **Technical status:** Verified for the documented IPv4 baseline\
-> **Portfolio status:** Review ready\
+> **Portfolio status:** Published\
 > **Evidence captured:** 9 of 9 core artifacts reviewed\
 > **Last reviewed:** 2026-09-29
 
@@ -167,7 +167,7 @@ SHA-256 values for the reviewed publication files:
 - [x] The snapshot is explicitly distinguished from an independent backup.
 - [x] IPv6 and broader network limitations remain visible.
 
-The evidence pack is **Verified for the documented IPv4 baseline / Review ready**.
+The evidence pack is **Verified for the documented IPv4 baseline / Published**.
 
 ## 8. Remaining improvements outside this completed scope
 
