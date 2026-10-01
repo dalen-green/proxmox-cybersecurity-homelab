@@ -1,8 +1,8 @@
 # Lessons Learned
 
 > **Document status:** Living learning notes\
-> **Last updated:** 2026-09-29\
-> **Current work:** Proxmox foundation, OPNsense networking, and the Ubuntu baseline
+> **Last updated:** 2026-09-30\
+> **Current work:** Windows endpoint setup and hardening, building on Proxmox, OPNsense, and Ubuntu
 
 ## Why I am keeping these notes
 
@@ -131,11 +131,13 @@ I now describe the successful test specifically instead of calling the whole env
 
 ### `LL-12` — Two guests can communicate without going through OPNsense
 
-**Recorded result: Architectural limitation identified; independent host testing remains.**
+**Recorded result: Same-subnet limitation identified; Ubuntu host testing is recorded, and Windows testing remains.**
 
 I learned that guests on the same `vmbr1` subnet can send traffic directly through the virtual switch. They do not normally send those local connections to their gateway.
 
 That means putting two VMs behind OPNsense does not automatically filter their traffic to each other. UFW can filter traffic reaching Ubuntu. Separate subnets or additional routed interfaces may be useful later if an exercise needs OPNsense between groups of guests.
+
+The Ubuntu source-specific test is now recorded under `LL-24`. Windows has joined the same bridge, so its own firewall still needs an independent test in LAB-04.
 
 ### `LL-13` — My IPv4 test says nothing conclusive about IPv6
 
@@ -205,6 +207,32 @@ I created separate administrative and standard accounts, checked their groups, a
 
 The final update record lists `python3-distupgrade` and `ubuntu-release-upgrader-core` as deferred by Ubuntu's phased rollout, with no reboot required at capture time. I kept that detail instead of forcing phased packages merely to make the pending count read zero. The September 29 result is still a point-in-time record; a later maintenance check may differ.
 
+## Windows: learning how the guest sees its hardware
+
+### `LL-26` — A missed boot prompt can look like a different problem
+
+**Recorded result: Windows Setup launched after retrying the DVD prompt.**
+
+The Windows VM displayed “Press any key to boot from CD or DVD,” then timed out and tried PXE network boot. I initially saw the later error rather than the earlier prompt.
+
+I reset the VM, focused the console, and responded to the prompt. Setup then launched. That sequence helped me understand that the installation disc was reachable and that the network-boot fallback did not, by itself, show an OPNsense problem.
+
+### `LL-27` — Virtual hardware still needs guest drivers
+
+**Recorded result: The storage driver exposed the disk; Ethernet was shown as connected after guest-driver setup.**
+
+Proxmox showed an 80 GiB disk, but Windows Setup initially showed no disk at all. I loaded the Windows 11 x64 VirtIO SCSI driver from the attached driver ISO, and the disk appeared. The virtual disk existed; Windows needed the driver for its controller.
+
+Networking was a separate step. I used the offline option shown during setup, created a local account, and worked through the VirtIO guest-tools installer. The later [Windows Settings capture](../projects/04-windows-endpoint-security/evidence/04a-windows-network-status.png) reports Ethernet Connected. I still need a guest-agent and device review before describing the whole tools installation as verified.
+
+### `LL-28` — Connected is a starting point for security checks
+
+**Recorded result: Initial Windows network state captured; endpoint controls remain untested.**
+
+The same Windows screen shows a Public network profile and a Local Account. Those labels are useful, but they do not tell me the account's privileges, the firewall's effective rules, or whether a standard account has been created.
+
+I am carrying the Ubuntu lesson into Windows: record the setting, perform a specific check, and explain its limits. The [LAB-04 plan](../projects/04-windows-endpoint-security/README.md) starts with account-role separation and continues through updates, Defender, firewall testing, logs, and recovery.
+
 ## Recovery and documentation habits I am developing
 
 ### `LL-16` — A snapshot still depends on the original storage
@@ -219,9 +247,11 @@ The test showed that the snapshot can undo this controlled change, but the snaps
 
 **Recorded result: Ongoing documentation practice.**
 
-The roadmap includes Windows, Active Directory, Wazuh, a simulated clinical laboratory, Kali, and vulnerable targets. Those are learning goals; the current project folders cover Proxmox, OPNsense, and Ubuntu.
+The current project folders cover Proxmox, OPNsense, Ubuntu, and the new Windows progress draft. Active Directory, Wazuh, the simulated clinical laboratory, Kali, and vulnerable targets remain learning goals in the roadmap.
 
 I track the technical state separately from the write-up. Ubuntu now has all nine planned core artifacts reviewed and published, including source-specific UFW testing and controlled rollback. The project is technically verified for that documented IPv4 scope. IPv6, independent backup restoration, host-restart testing, and continuous compliance remain separate work rather than reasons to understate the completed baseline.
+
+Windows has reached the desktop and reports Ethernet connectivity, but its security baseline remains in progress. The two initial screenshots support the setup observations; the remaining account, protection, logging, and recovery checks are still planned.
 
 ### `LL-22` — Redaction should leave enough detail to explain the result
 
@@ -246,6 +276,7 @@ I am trying to make one understandable change at a time and record why it helped
 
 ## What I still need to practice
 
+- Complete and validate the Windows account, maintenance, endpoint-protection, logging, and recovery baseline.
 - Turn the individual Ubuntu checks into a repeatable baseline-audit script.
 - Complete the protected-network, management-access, and IPv6 checks before introducing vulnerable targets.
 - Test startup order and service recovery after a full host restart.
@@ -256,6 +287,7 @@ I am trying to make one understandable change at a time and record why it helped
 
 | Date | Change |
 |---|---|
+| 2026-09-30 | Added Windows boot-prompt, VirtIO driver, and initial network-status lessons; kept the remaining hardening work visibly in progress. |
 | 2026-09-29 | Recorded final LAB-03 sudo-role review, source-specific UFW testing, temporary-access cleanup, and controlled snapshot rollback. |
 | 2026-09-28 | Updated LAB-03 progress and remaining practice to reflect the September 26 service/listener/authentication review. |
 | 2026-09-25 | Rewrote the lessons as first-person learning notes, kept the original lesson IDs, and added evidence-backed Ubuntu lessons and current limitations. |

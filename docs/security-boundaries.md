@@ -1,14 +1,14 @@
 # Security Boundaries
 
 > **Document status:** Living learning notes\
-> **Last updated:** 2026-09-29\
-> **Current work:** Proxmox foundation, OPNsense networking, and the Ubuntu baseline
+> **Last updated:** 2026-09-30\
+> **Current work:** Windows endpoint setup and hardening, building on Proxmox, OPNsense, and Ubuntu
 
 ## What I am trying to protect
 
 I am building this lab to learn IT and cybersecurity without putting my everyday computers or personal information in the path of my experiments. I started with very little networking experience, so I am learning to ask a specific question about each connection: which system can reach which service, and what actually controls that access?
 
-A **security boundary** is where I expect access to be limited. In this lab, OPNsense controls the normal routed path between networks, while Ubuntu's UFW firewall controls traffic at the Ubuntu server. I need evidence that each protection works before making a broad claim about isolation.
+A **security boundary** is where I expect access to be limited. In this lab, OPNsense controls the normal routed path between networks, while Ubuntu's UFW firewall controls traffic at the Ubuntu server. Windows is now installed on the lab bridge, and reviewing its host firewall and account roles is the next endpoint task. I need evidence that each protection works before making a broad claim about isolation.
 
 My protected assets include my home devices and data, Proxmox administration, the OPNsense configuration, and the lab's disks and recovery material. Testing is limited to systems I own or am explicitly authorized to test.
 
@@ -21,7 +21,7 @@ The [architecture](architecture.md) shows the connections. This document explain
 | Home network | My workstation, router, and household devices | Keep lab experiments from gaining unnecessary access to these systems |
 | Proxmox management | The services used to administer the host and VMs | Allow deliberate administration from my trusted workstation |
 | OPNsense | Lab gateway, firewall, and network services | Control routed traffic and limit access to its own administration services |
-| Lab network on `vmbr1` | Ubuntu now; other systems later | Allow the connections needed for each exercise |
+| Lab network on `vmbr1` | Ubuntu and Windows 11; other systems later | Allow the connections needed for each exercise |
 | Internet | External services and networks | Permit needed outbound use without exposing management or lab services through router port forwarding |
 
 Proxmox management and OPNsense WAN share `vmbr0` and the same physical Ethernet connection. They have different jobs, but they are not physically separate networks. OPNsense WAN is Proxmox `net1` / guest `vtnet1`; LAN is `net0` / `vtnet0` on `vmbr1`.
@@ -48,8 +48,10 @@ I use **configuration reviewed** for a saved setting and **tested** for an obser
 | `SB-10`: Ubuntu UFW | Tested for the recorded IPv4 TCP/22 sources | Configuration permits `10.10.10.2`; logs show an accepted login from that source and blocked SYN packets from `10.10.10.1` |
 | `SB-11`: Tested clean recovery point | Tested for one controlled marker | Snapshot view, pre-change marker checksum, and post-rollback network/SSH/UFW checks |
 | `SB-12`: Centralized monitoring | Planned | Wazuh belongs to a later project |
+| `SB-13`: Windows attached to `vmbr1` | Configuration reviewed | `WIN-E01` shows one VirtIO NIC on the internal bridge; Windows IP/route/DNS and functional egress checks remain open |
+| `SB-14`: Windows endpoint protections and account roles | In progress; not yet validated | Initial Local Account and Connected/Public screen captured; standard-user/elevation checks, Defender, firewall policy, logging, and independent traffic tests remain |
 
-The evidence is linked from the [Proxmox](../projects/01-proxmox-foundation/evidence/), [OPNsense](../projects/02-opnsense-segmentation/evidence/), and [Ubuntu](../projects/03-ubuntu-server-baseline/evidence/) evidence indexes. These are records of the captured state, not a live security assessment.
+The evidence is linked from the [Proxmox](../projects/01-proxmox-foundation/evidence/), [OPNsense](../projects/02-opnsense-segmentation/evidence/), [Ubuntu](../projects/03-ubuntu-server-baseline/evidence/), and draft [Windows](../projects/04-windows-endpoint-security/evidence/) indexes. These are records of the captured state, not a live security assessment.
 
 ## What the OPNsense test means
 
@@ -96,6 +98,14 @@ The [Ubuntu firewall documentation](https://ubuntu.com/server/docs/how-to/securi
 
 The hardware screenshot has a Proxmox NIC firewall checkbox enabled. That alone does not show a configured and tested Proxmox firewall policy. I am not counting it as a separately validated protection.
 
+## The Windows boundary I am working on next
+
+Windows VM `102` has one adapter on `vmbr1`, with no direct `vmbr0` attachment in the reviewed hardware. Its Settings screen reports Ethernet Connected and a Public network profile. This establishes initial setup progress, but I have not yet captured its address, gateway, DNS, or a controlled egress test.
+
+Windows Firewall will be responsible for host-level filtering, including ordinary connections from another guest on the same lab subnet. The Public profile label does not establish its effective rules or prove that a particular connection is denied. The LAB-04 plan calls for a known listener, an independent allowed/blocked comparison, Windows-side logs, and removal of temporary test settings.
+
+The setup account is local. Its administrator membership, the separate standard account, and deliberate elevation still need evidence. Defender state, audit logging, Sysmon events, and Windows snapshot recovery also remain open in the [Windows project plan](../projects/04-windows-endpoint-security/README.md). The earlier Ubuntu and OPNsense tests do not establish these Windows controls.
+
 ## Administrative access and its temporary exception
 
 Normal Proxmox administration comes from my workstation on the home network. The VM console provides another way to work on a guest when its networking or SSH is unavailable.
@@ -118,6 +128,8 @@ No home-router port forwarding is documented for the lab. I use the OPNsense con
 | Unauthorized lab endpoint → management services | Comprehensive denial is not documented | Complete `SB-06` and `SB-07` |
 | Temporary Proxmox source → Ubuntu SSH | UFW permits `10.10.10.2`; successful public-key login captured and latest runtime path removed after use | Retain the source restriction and repeat the cleanup check whenever the path is re-enabled |
 | Independent `vmbr1` source → Ubuntu TCP/22 | UFW block entries captured for source `10.10.10.1` while the same service accepted the permitted source | Repeat for future services or policies rather than generalizing one TCP/22 test |
+| Windows → OPNsense and internet | One NIC on `vmbr1`; Windows reports Ethernet Connected/Public | Capture Windows-specific addressing, gateway/DNS, and functional tests |
+| Another lab endpoint → Windows test service | No Windows host-firewall test recorded yet | Confirm a listener, compare fresh allowed/blocked traffic, correlate Windows logs, and clean up |
 | Internet → lab | No router forwarding documented | An external denial test is not yet published; IPv6 also needs review |
 
 NAT changes addresses for routed connections; it is not a substitute for a reviewed firewall policy. Likewise, assigning a private address does not by itself make a system inaccessible to other devices that have a route to it.
@@ -135,6 +147,7 @@ NAT changes addresses for routed connections; it is not a substitute for a revie
 | `VAL-07`: IPv6 behavior | Not yet tested |
 | `VAL-08`: Independent UFW testing | Passed for the recorded IPv4 TCP/22 source comparison |
 | `VAL-09`: Ubuntu snapshot recovery | Passed for one post-snapshot marker plus restored IPv4 network, SSH, and UFW state |
+| `VAL-10`: Windows endpoint controls | Planned in LAB-04; initial hardware and network status do not complete these tests |
 
 Before adding deliberately vulnerable targets, I plan to complete `SB-06`, `SB-07`, and `SB-08`, retain a private OPNsense configuration backup, and establish tested recovery points. I will keep targets off `vmbr0`, define the authorized source and destination before each exercise, limit unnecessary outbound access, and power targets off when they are not needed. Vulnerable applications will run inside disposable VMs. Unknown malware, ransomware deployment, and attacks on the host or third-party systems are outside this lab's scope.
 
@@ -152,6 +165,7 @@ For public documentation, I remove credentials, keys, upstream addresses, hardwa
 
 | Date | Change |
 |---|---|
+| 2026-09-30 | Added Windows placement and current observations while keeping account, host-firewall, logging, network, and recovery validation open. |
 | 2026-09-29 | Recorded the allowed-versus-blocked Ubuntu UFW test, latest temporary-path cleanup, and controlled snapshot rollback while retaining IPv6 and independent-backup limits. |
 | 2026-09-28 | Linked the September 26 SSH authentication evidence and updated the latest session reference; independent UFW denial testing and temporary-path cleanup remain open. |
 | 2026-09-25 | Rewrote the boundaries in a learning-focused voice; aligned SSH/UFW progress, clarified the temporary management path, and corrected the independent UFW test expectation. |
