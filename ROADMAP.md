@@ -1,6 +1,6 @@
 # Cybersecurity Home Lab Roadmap
 
-Last updated: 2026-09-29
+Last updated: 2026-09-30
 
 This roadmap is my learning plan for a first hands-on IT lab. I am starting with Proxmox, networking, and Linux administration, then building toward Windows, identity, monitoring, recovery, and authorized security testing. My goal is to understand and explain each layer before depending on it in a larger project.
 
@@ -33,14 +33,14 @@ Portfolio documentation is tracked separately from technical implementation:
 | `LAB-01` | Proxmox foundation | **Verified** | **Published** |
 | `LAB-02` | OPNsense network segmentation | **Verified for IPv4** | **Published** |
 | `LAB-03` | Ubuntu Server security baseline | **Verified for documented IPv4 baseline** | **Published** |
-| `LAB-04` | Windows 11 endpoint security | **Planned** | **Not started** |
+| `LAB-04` | Windows 11 endpoint security | **In progress** | **Drafting** |
 | `LAB-05` | Windows Server and Active Directory | **Planned** | **Not started** |
 | `LAB-06` | Wazuh monitoring and detection | **Planned** | **Not started** |
 | `LAB-07` | Secure clinical laboratory environment | **Planned** | **Not started** |
 | `LAB-08` | Kali attack and control validation | **Planned** | **Not started** |
 | `LAB-09` | Vulnerable systems and web applications | **Planned** | **Not started** |
 
-The three existing project folders are LAB-01 through LAB-03. LAB-02's verified scope is its recorded IPv4 setup and one logged SSH denial test. LAB-03 now has nine of nine core evidence artifacts reviewed. Its documented IPv4 baseline includes account and sudo-role separation, recorded update state, hardened SSH, service/listener review, source-specific UFW testing, temporary-path cleanup, and a controlled snapshot rollback. Capture dates describe saved states, not a live or continuous system audit.
+The project folders now cover LAB-01 through LAB-04. LAB-02's verified scope is its recorded IPv4 setup and one logged SSH denial test. LAB-03 now has nine of nine core evidence artifacts reviewed. Its documented IPv4 baseline includes account and sudo-role separation, recorded update state, hardened SSH, service/listener review, source-specific UFW testing, temporary-path cleanup, and a controlled snapshot rollback. LAB-04 records Windows installation, local-account setup, and initial Ethernet connectivity, with reviewed hardware and network screenshots. Its hardening and functional validation remain in progress. Capture dates describe saved states, not a live or continuous system audit.
 
 ## Sequencing and Healthcare Focus
 
@@ -161,26 +161,43 @@ Future improvements outside the completed baseline scope:
 
 **Dependencies:** The Proxmox foundation and documented OPNsense lab-network controls. Domain joining follows `LAB-05` rather than blocking the initial endpoint baseline.
 
-Planned work:
+Completed setup:
 
-- [ ] Confirm licensing and domain-join prerequisites before installation.
-- [ ] Install Windows 11 with virtual TPM and UEFI support.
-- [ ] Create separate administrative and standard accounts.
-- [ ] Apply operating-system and security updates.
-- [ ] Review Microsoft Defender, Windows Firewall, and audit settings.
+- [x] Create Windows VM `102` with four CPU cores, 8 GiB RAM, an 80 GiB disk, OVMF UEFI, and virtual TPM 2.0.
+- [x] Review the created hardware and confirm one VirtIO adapter on `vmbr1`.
+- [x] Load the VirtIO SCSI driver during installation and complete Windows setup.
+- [x] Create the local setup account and reach the Windows desktop.
+- [x] Work through the VirtIO driver setup and capture Windows reporting Ethernet Connected with a Public profile.
+
+Remaining baseline work:
+
+- [ ] Verify administrative membership, create/confirm the standard account, and test deliberate elevation.
+- [ ] Apply operating-system and security updates and record the installed build, restart state, and synchronized time.
+- [ ] Verify guest drivers/agent, Secure Boot, and TPM state inside Windows.
+- [ ] Capture Windows' own IPv4 settings and DNS/HTTPS tests through the intended lab path.
+- [ ] Review Microsoft Defender, Windows Firewall profiles/rules, and audit settings.
 - [ ] Inspect active services, network connections, startup items, and Event Viewer logs.
-- [ ] Install Sysmon using a documented configuration.
-- [ ] Create a clean baseline snapshot.
-- [ ] Join the endpoint to the lab domain after `LAB-05` is operational.
+- [ ] Install Sysmon with a documented configuration and verify a controlled event.
+- [ ] Compare allowed and denied traffic from an independent lab system against a known Windows listener; retain the matching firewall log and cleanup result.
+- [ ] Create a clean baseline snapshot and test a controlled marker rollback with post-recovery checks.
+
+Later integration:
+
+- [ ] Review domain-join prerequisites and join the endpoint after `LAB-05` is operational.
+- [ ] Validate Windows log forwarding with Wazuh in `LAB-06`.
 
 Acceptance criteria:
 
 - The endpoint is patched and uses least-privilege daily access.
 - Host firewall and security protections are enabled and documented.
+- A selected host-firewall behavior is tested from an independent lab system and supported by Windows-side evidence.
 - A selected security event can be generated and found in the relevant log.
+- A controlled snapshot rollback restores the documented baseline checks.
 - The endpoint can later report security telemetry to Wazuh.
 
-Planned repository location (not yet created): `projects/04-windows-endpoint-security/`
+Progress write-up: [`projects/04-windows-endpoint-security/`](projects/04-windows-endpoint-security/)
+
+Draft evidence and capture plan: [LAB-04 evidence pack](projects/04-windows-endpoint-security/evidence/)
 
 ---
 
@@ -381,14 +398,14 @@ A milestone is marked **Published** only after its project folder contains:
 
 ### Now
 
-1. Complete the remaining protected-network, management-access, and IPv6 isolation review before authorized attack or vulnerability testing.
-2. Optionally begin the `LAB-07` charter, fictional workflow, proposed architecture, roles, access matrix, and initial risk register without adding VMs or claiming implementation.
+1. Finish the Windows 11 endpoint baseline in `LAB-04`, starting with account separation, updates, and endpoint protections, then validate logging, firewall behavior, and recovery.
+2. Complete the remaining protected-network, management-access, and IPv6 isolation review before authorized attack or vulnerability testing.
+3. Optionally begin the `LAB-07` charter, fictional workflow, proposed architecture, roles, access matrix, and initial risk register without adding VMs or claiming implementation.
 
 ### Next
 
-1. Build and validate the Windows 11 endpoint in `LAB-04`.
-2. Deploy Windows Server and Active Directory in `LAB-05`; join the endpoint and validate group-based access and Group Policy.
-3. Deploy Wazuh in `LAB-06` and validate selected Linux, Windows, and infrastructure telemetry using controlled events.
+1. Deploy Windows Server and Active Directory in `LAB-05`; join the endpoint and validate group-based access and Group Policy.
+2. Deploy Wazuh in `LAB-06` and validate selected Linux, Windows, and infrastructure telemetry using controlled events.
 
 ### Integration and Later Testing
 
@@ -417,6 +434,8 @@ Healthcare scenarios use synthetic data and fictional workflows only. A simulate
 ## Revision Practice
 
 This roadmap will be updated when a milestone changes state. A status changes to **Verified** only after its acceptance criteria have been tested, and a portfolio status changes to **Published** only after the supporting evidence has been sanitized and committed.
+
+The 2026-09-30 progress update starts the LAB-04 Windows write-up and evidence plan. It records the created VM, Windows installation, local-account setup, and initial Connected/Public network screen. Account-role separation, patch state, endpoint controls, functional network/firewall tests, logging, and recovery remain open; LAB-04 is **In progress / Drafting**.
 
 The 2026-09-29 completion update publishes nine of nine reviewed LAB-03 core artifacts. It closes the intended sudo-role review, independent IPv4 UFW test, temporary management-path cleanup, labeled snapshot, and controlled rollback while keeping IPv6, independent backup restoration, host-restart testing, and continuous compliance outside the verified scope.
 
