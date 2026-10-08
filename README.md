@@ -21,6 +21,7 @@ LAB-03 now has all nine core artifacts reviewed. The final work verifies effecti
 | Notes | What they explain |
 |---|---|
 | [Architecture](docs/architecture.md) | What each system does, why WAN uses `vmbr0` and LAN uses `vmbr1`, and how temporary management access works |
+| [Resource operating strategy](docs/resource-operating-strategy.md) | Proposed VM combinations, memory budgets, startup dependencies, and measurements needed to validate the 32 GB host |
 | [Security boundaries](docs/security-boundaries.md) | Which connections the firewalls control, what the tests establish, and which protections still need checking |
 | [Lessons learned](docs/lessons-learned.md) | The confusing parts, troubleshooting steps, and habits I am developing |
 | [Roadmap](ROADMAP.md) | Completion criteria and the planned learning sequence |

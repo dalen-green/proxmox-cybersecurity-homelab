@@ -153,6 +153,12 @@ I have 32 GB of host memory, so I plan to run the VMs needed for each exercise a
 
 OPNsense needs to start before guests that depend on its network services. Earlier setup notes record start-at-boot order 1 and a 30-second delay for OPNsense. The published hardware screenshot does not establish those options, and a full host-restart test is still pending.
 
+### Proposed operating strategy — 2026-10-08
+
+The [resource operating strategy](resource-operating-strategy.md) adds a calculated session matrix for Windows hardening, Active Directory, Wazuh, and the clinical project. The saved Proxmox summary reports 31.08 GiB usable RAM and 16 logical CPUs. After a 4 GiB host-side allowance and a separate 4 GiB safety margin, the plan rounds the calculated 23.08 GiB guest budget down to a practical 22 GiB starting ceiling. A fresh inventory and workload measurements are still required. Ubuntu is counted at 4 GiB until its configuration is verified. The plan also references the Windows progress recorded separately in open PR #5 without changing the implementation status recorded above.
+
+The default proposed restart mode brings up only OPNsense. The new plan describes service-readiness checks and a controlled full-host restart test; it does not establish that startup order already works. Its ballooning, LXC, and 64 GB upgrade options remain proposals. No live settings or existing evidence were changed for this resource analysis.
+
 ## Decisions I want to remember
 
 | ID | Choice | Why it matters to me |
